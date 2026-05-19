@@ -701,7 +701,7 @@
   <script>
     /* ── Config ──────────────────────────────────────────── */
     const TEST_DURATION  = 120;
-    const GEMINI_MODEL   = 'gemini-2.5-flash-lite-preview-06-17';
+    const GEMINI_MODEL   = 'gemini-2.5-flash-lite';
     const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
     // Inject your API key here or via server-side templating.
@@ -778,9 +778,9 @@
 
     /* ── Gemini ──────────────────────────────────────────── */
     async function callGemini(prompt) {
-      const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      const res = await fetch(GEMINI_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.85, maxOutputTokens: 420, topP: 0.95 }
