@@ -3,26 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenType - 5 Minute Typing Test</title>
+    <title>ZenType - AI Adaptive 2 Minute Typing Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Syne:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --blue: #2563eb;
+            --blue-light: #dbeafe;
+            --green: #059669;
+            --red: #e11d48;
+            --bg: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
+            font-family: 'Syne', sans-serif;
+            background-color: var(--bg);
             overflow-x: hidden;
         }
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* ── Text container ── */
         #text-container {
-            height: 200px; 
+            height: 200px;
             overflow-y: hidden;
             position: relative;
             padding: 20px;
             background: #ffffff;
             border-radius: 1.5rem;
         }
+
         .char {
             position: relative;
             display: inline-block;
@@ -31,373 +43,755 @@
             white-space: pre;
             padding: 0 1px;
         }
-        .char.current {
-            background-color: #dbeafe;
-            border-bottom: 3px solid #2563eb;
-            border-radius: 4px;
-            color: #1e293b;
+        .char.current  { background-color: #dbeafe; border-bottom: 3px solid #2563eb; border-radius: 4px; color: #1e293b; }
+        .char.correct  { color: #059669; }
+        .char.incorrect{ color: #ffffff; background-color: #e11d48; border-radius: 4px; }
+
+        #text-container::-webkit-scrollbar { width: 0px; }
+
+        /* ── Loading shimmer ── */
+        @keyframes shimmer {
+            0%   { background-position: -700px 0; }
+            100% { background-position: 700px 0; }
         }
-        .char.correct {
-            color: #059669;
+        .shimmer-line {
+            height: 22px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 700px 100%;
+            animation: shimmer 1.4s infinite linear;
+            margin-bottom: 14px;
         }
-        .char.incorrect {
-            color: #ffffff;
-            background-color: #e11d48;
-            border-radius: 4px;
+
+        /* ── AI badge pulse ── */
+        @keyframes ai-pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+            50%       { opacity: .85; box-shadow: 0 0 0 6px rgba(37,99,235,0); }
         }
-        .stats-card {
-            transition: all 0.2s ease;
+        .ai-badge { animation: ai-pulse 2s infinite; }
+
+        /* ── Difficulty pill colors ── */
+        .pill-beginner  { background:#dcfce7; color:#15803d; }
+        .pill-easy      { background:#d1fae5; color:#047857; }
+        .pill-medium    { background:#fef9c3; color:#854d0e; }
+        .pill-hard      { background:#fee2e2; color:#b91c1c; }
+        .pill-expert    { background:#ede9fe; color:#6d28d9; }
+
+        /* ── Smooth fade-in ── */
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+        .fade-in { animation: fadeIn .4s ease forwards; }
+
+        /* ── Stats card ── */
+        .stats-card { transition: all 0.2s ease; }
+
+        /* ── Timer warning ── */
+        @keyframes timerWarn {
+            0%,100% { color:#fff; }
+            50%      { color:#f87171; }
         }
-        #text-container::-webkit-scrollbar {
-            width: 0px;
-        }
+        .timer-warn { animation: timerWarn .7s infinite; }
+
+        /* ── Scrollbar for history ── */
+        #perf-history::-webkit-scrollbar { width:4px; }
+        #perf-history::-webkit-scrollbar-track { background:#f1f5f9; border-radius:2px; }
+        #perf-history::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
+
+        /* ── Retake button loading ── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin .8s linear infinite; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 gap-6">
 
-    <div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl text-center border border-slate-100">
-            <div class="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-lg shadow-blue-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+<!-- ══════════════════════════════════════
+     NAME MODAL (API key from env, not UI)
+══════════════════════════════════════ -->
+<div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl border border-slate-100 fade-in">
+
+        <!-- Icon + title -->
+        <div class="flex flex-col items-center mb-8">
+            <div class="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-blue-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
             </div>
-            <h2 class="text-4xl font-black text-slate-900 mb-2">ZenType</h2>
-            <p class="text-slate-500 mb-10 font-semibold tracking-tight">Enter your name to start the simple passage test</p>
-            
-            <input type="text" id="employee-name-input" placeholder="Employee Full Name" 
-                class="w-full px-6 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-8 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-xl text-slate-800 transition-all text-center">
-            
-            <button onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
-                Start Test
-            </button>
+            <h2 class="text-4xl font-black text-slate-900 tracking-tight mb-1">ZenType <span class="text-blue-600">AI</span></h2>
+            <p class="text-slate-400 font-semibold text-sm text-center">Adaptive passages powered by Gemini 2.5 Flash-Lite</p>
+        </div>
+
+        <!-- Employee name only -->
+        <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Employee Name</label>
+        <input type="text" id="employee-name-input" placeholder="Full Name"
+            class="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-6 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-lg text-slate-800 transition-all">
+
+        <!-- Info note -->
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-3 mb-6 flex gap-3 items-start">
+            <svg class="text-blue-500 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p class="text-blue-700 text-xs font-semibold leading-relaxed">Gemini analyses your WPM, accuracy & errors after each test and generates a custom passage to improve your weak areas.</p>
+        </div>
+
+        <button onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
+            Start Adaptive Test
+        </button>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header class="w-full max-w-4xl flex justify-between items-center px-2">
+    <div>
+        <div class="flex items-center gap-3 mb-1">
+            <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">ZenType <span class="text-blue-600">AI</span>
+                <span class="text-blue-500 font-bold text-xs tracking-widest ml-2 uppercase bg-blue-50 px-2 py-1 rounded-lg">Gemini Adaptive</span>
+            </h1>
+        </div>
+        <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] ml-12"></p>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <!-- Attempt counter -->
+        <div id="attempt-badge" class="hidden bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-black text-slate-500 shadow-sm">
+            Attempt <span id="attempt-num" class="text-blue-600">1</span>
+        </div>
+
+        <!-- Difficulty pill -->
+        <div id="difficulty-badge" class="hidden px-4 py-2 rounded-xl text-xs font-black shadow-sm">
+            <span id="difficulty-label">Standard</span>
+        </div>
+
+        <!-- Sound toggle -->
+        <button id="sound-toggle" class="bg-white p-2.5 rounded-xl shadow-sm text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
+            <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+        </button>
+
+        <!-- Timer -->
+        <div id="timer-display" class="bg-slate-900 text-white px-7 py-3 rounded-2xl mono text-2xl font-black tracking-tighter shadow-xl border-b-4 border-slate-700">02:00</div>
+    </div>
+</header>
+
+
+<!-- ══════════════════════════════════════
+     MAIN TYPING PANEL
+══════════════════════════════════════ -->
+<main class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl shadow-slate-200/60 p-8 relative overflow-hidden border border-slate-100">
+
+    <!-- Live stats -->
+    <div class="grid grid-cols-3 gap-6 mb-8">
+        <div class="stats-card bg-blue-50/60 p-5 rounded-2xl border border-blue-100 text-center">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words / Min</p>
+            <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
+        </div>
+        <div class="stats-card bg-emerald-50/60 p-5 rounded-2xl border border-emerald-100 text-center">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-emerald-400 font-black mb-1">Accuracy</p>
+            <p id="live-accuracy" class="text-5xl font-black text-emerald-600">100%</p>
+        </div>
+        <div class="stats-card bg-rose-50/60 p-5 rounded-2xl border border-rose-100 text-center">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-rose-400 font-black mb-1">Mistakes</p>
+            <p id="live-errors" class="text-5xl font-black text-rose-600">0</p>
         </div>
     </div>
 
-    <header class="w-full max-w-4xl flex justify-between items-end mb-8 px-2">
-        <div>
-            <div class="flex items-center gap-3 mb-1">
-                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z"/></svg>
-                </div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">ZenType <span class="text-blue-600 font-bold text-sm tracking-widest ml-2 uppercase">Simple Mode</span></h1>
-            </div>
-            <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] ml-11"></p>
-        </div>
-        <div class="flex items-center gap-4">
-            <button id="sound-toggle" class="bg-white p-3 rounded-2xl shadow-md text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
-                <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-            </button>
-            <div id="timer-display" class="bg-slate-900 text-white px-8 py-3 rounded-2xl mono text-2xl font-black tracking-tighter shadow-xl border-b-4 border-slate-700">05:00</div>
-        </div>
-    </header>
-
-    <main class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl shadow-slate-300/50 p-10 relative overflow-hidden border border-slate-100">
-        
-        <div class="grid grid-cols-3 gap-8 mb-10">
-            <div class="stats-card bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words Per Minute</p>
-                <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
-            </div>
-            <div class="stats-card bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-400 font-black mb-1">Accuracy</p>
-                <p id="live-accuracy" class="text-5xl font-black text-emerald-600">100%</p>
-            </div>
-            <div class="stats-card bg-rose-50/50 p-5 rounded-2xl border border-rose-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-rose-400 font-black mb-1">Mistakes</p>
-                <p id="live-errors" class="text-5xl font-black text-rose-600">0</p>
-            </div>
-        </div>
-
-        <div id="text-container" class="mono text-3xl leading-[1.8] text-slate-400 select-none border-2 border-slate-50">
-            Initializing simple passage...
-        </div>
-
-        <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
-
-        <div id="focus-overlay" class="absolute inset-0 bg-white/60 flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-500">
-            <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-4 shadow-xl shadow-blue-200 animate-pulse">
-                CLICK TO START
-            </div>
-            <p class="text-slate-800 font-bold tracking-wide">Standard 5-minute English passage</p>
-        </div>
-    </main>
-
-    <div id="results-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl transform transition-all duration-500 border border-white/20">
-            <div class="text-center mb-12">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-                </div>
-                <h2 class="text-5xl font-black text-slate-900 mb-2">Test Complete</h2>
-                <div class="h-1 w-24 bg-blue-600 mx-auto mb-6 rounded-full"></div>
-                <p id="result-employee-name" class="text-blue-600 font-black text-2xl uppercase tracking-[0.2em] mb-1"></p>
-                <p class="text-slate-400 font-bold text-sm uppercase">Typing Speed Assessment Report</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-8 mb-12">
-                <div class="p-10 bg-slate-900 rounded-[2rem] text-center text-white shadow-2xl">
-                    <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Words Per Minute</p>
-                    <p id="final-wpm" class="text-7xl font-black text-blue-400">0</p>
-                </div>
-                <div class="p-10 bg-emerald-600 rounded-[2rem] text-center text-white shadow-2xl">
-                    <p class="text-xs font-black uppercase tracking-[0.3em] text-emerald-200 mb-3">Net Accuracy</p>
-                    <p id="final-accuracy" class="text-7xl font-black">0%</p>
-                </div>
-                <div class="p-8 bg-slate-50 rounded-3xl text-center border-2 border-slate-100">
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Keystrokes</p>
-                    <p id="final-keys" class="text-3xl font-black text-slate-800">0</p>
-                </div>
-                <div class="p-8 bg-slate-50 rounded-3xl text-center border-2 border-slate-100">
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Errors</p>
-                    <p id="final-errors" class="text-3xl font-black text-rose-600">0</p>
-                </div>
-            </div>
-
-            <button onclick="resetTest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all flex items-center justify-center gap-4 text-xl shadow-2xl">
-                Retake Assessment
-            </button>
+    <!-- AI passage label -->
+    <div class="flex items-center justify-between mb-3 px-1">
+        <p class="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400">Passage</p>
+        <div id="ai-label" class="hidden items-center gap-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ai-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+            AI Generated
         </div>
     </div>
 
-    <script>
-        const TEST_DURATION = 300; 
-        const passages = [
-            "The journey of a thousand miles begins with a single step. Success is not about how much money you make, but the difference you make in people's lives. Believe you can and you're halfway there. It does not matter how slowly you go as long as you do not stop. Everything you've ever wanted is on the other side of fear. Hardships often prepare ordinary people for an extraordinary destiny. Dream big and dare to fail. Quality is not an act, it is a habit. The only way to do great work is to love what you do. If you can dream it, you can do it. Peace comes from within. Do not seek it without. What we think, we become. Life is ten percent what happens to us and ninety percent how we react to it. Your time is limited, so do not waste it living someone else's life. The future belongs to those who believe in the beauty of their dreams. Stay hungry, stay foolish. It is never too late to be what you might have been."
-        ];
+    <!-- Text display -->
+    <div id="text-container" class="mono text-2xl leading-[1.9] text-slate-400 select-none border-2 border-slate-50">
+        Initializing...
+    </div>
 
-        let employeeName = "";
-        let timer = TEST_DURATION;
-        let interval = null;
-        let isRunning = false;
-        let currentPassage = "";
-        let currentIndex = 0;
-        let errors = 0;
-        let totalTyped = 0;
-        let correctTyped = 0;
-        let soundEnabled = true;
+    <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
 
-        // Audio System for "Tick" sound
-        let audioCtx = null;
-        function playTickSound() {
-            if (!soundEnabled) return;
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Create a "tick" using a short burst of noise and a high-pitched pulse
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.02);
-            
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.02);
-        }
+    <!-- Click-to-start overlay -->
+    <div id="focus-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-500 rounded-[2rem]">
+        <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-3 shadow-xl shadow-blue-200 animate-pulse">
+            CLICK TO START
+        </div>
+        <p class="text-slate-700 font-bold tracking-wide text-sm">2-minute adaptive English passage</p>
+    </div>
+</main>
 
-        const textContainer = document.getElementById('text-container');
-        const typingInput = document.getElementById('typing-input');
-        const timerDisplay = document.getElementById('timer-display');
-        const liveWpm = document.getElementById('live-wpm');
-        const liveAccuracy = document.getElementById('live-accuracy');
-        const liveErrors = document.getElementById('live-errors');
-        const focusOverlay = document.getElementById('focus-overlay');
-        const resultsModal = document.getElementById('results-modal');
-        const nameModal = document.getElementById('name-modal');
-        const nameInput = document.getElementById('employee-name-input');
-        const soundToggle = document.getElementById('sound-toggle');
 
-        soundToggle.onclick = () => {
-            soundEnabled = !soundEnabled;
-            document.getElementById('sound-on-icon').classList.toggle('hidden');
-            document.getElementById('sound-off-icon').classList.toggle('hidden');
-            soundToggle.classList.toggle('text-blue-600');
-            soundToggle.classList.toggle('text-slate-400');
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+<!-- ══════════════════════════════════════
+     PERFORMANCE HISTORY BAR
+══════════════════════════════════════ -->
+<div id="history-panel" class="hidden w-full max-w-4xl bg-white rounded-2xl shadow-lg border border-slate-100 p-5 fade-in">
+    <p class="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3">Performance History</p>
+    <div id="perf-history" class="flex gap-3 overflow-x-auto pb-1"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     RESULTS MODAL
+══════════════════════════════════════ -->
+<div id="results-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-50 hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl border border-white/20 fade-in">
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl mb-5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            </div>
+            <h2 class="text-4xl font-black text-slate-900 mb-1">Test Complete</h2>
+            <div class="h-1 w-20 bg-blue-600 mx-auto mb-4 rounded-full"></div>
+            <p id="result-employee-name" class="text-blue-600 font-black text-xl uppercase tracking-[0.2em] mb-1"></p>
+            <p class="text-slate-400 font-bold text-xs uppercase">Typing Speed Assessment Report</p>
+        </div>
+
+        <!-- Score grid -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="p-8 bg-slate-900 rounded-[1.5rem] text-center text-white shadow-xl">
+                <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Words Per Minute</p>
+                <p id="final-wpm" class="text-6xl font-black text-blue-400">0</p>
+            </div>
+            <div class="p-8 bg-emerald-600 rounded-[1.5rem] text-center text-white shadow-xl">
+                <p class="text-xs font-black uppercase tracking-[0.3em] text-emerald-200 mb-2">Net Accuracy</p>
+                <p id="final-accuracy" class="text-6xl font-black">0%</p>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-2xl text-center border-2 border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Keystrokes</p>
+                <p id="final-keys" class="text-3xl font-black text-slate-800">0</p>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-2xl text-center border-2 border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Errors</p>
+                <p id="final-errors" class="text-3xl font-black text-rose-600">0</p>
+            </div>
+        </div>
+
+        <!-- AI feedback box -->
+        <div id="ai-feedback-box" class="hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 mb-6">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="bg-blue-600 rounded-lg p-1 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <span class="text-xs font-black uppercase tracking-widest text-blue-600">Gemini AI Insight</span>
+            </div>
+            <p id="ai-feedback-text" class="text-slate-700 text-sm font-semibold leading-relaxed"></p>
+        </div>
+
+        <!-- Next passage status -->
+        <div id="next-passage-status" class="flex items-center gap-3 bg-slate-50 rounded-2xl px-5 py-4 mb-6 border border-slate-100">
+            <div id="next-passage-spinner" class="text-blue-500">
+                <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            </div>
+            <div id="next-passage-ready" class="text-emerald-500 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div>
+                <p id="next-passage-label" class="text-slate-700 font-bold text-sm">Gemini is crafting your next adaptive passage…</p>
+                <p id="next-difficulty-label" class="text-slate-400 text-xs font-semibold"></p>
+            </div>
+        </div>
+
+        <!-- Retake button -->
+        <button id="retake-btn" onclick="resetTest()" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 text-lg shadow-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Retake with AI Passage
+        </button>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+// ── Constants ──────────────────────────────────────────────
+const TEST_DURATION = 120;
+const GEMINI_MODEL  = 'gemini-2.5-flash-lite-preview-06-17';
+const GEMINI_URL    = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+// ── API Key — set via environment / server injection ────────
+// Replace the empty string below with your key when deploying,
+// or inject it server-side (e.g. as a template variable).
+// Example: const GEMINI_API_KEY = '{{GEMINI_API_KEY}}';
+const GEMINI_API_KEY = '';   // ← injected from env at deploy time
+
+// ── State ──────────────────────────────────────────────────
+let employeeName    = '';
+let timer           = TEST_DURATION;
+let interval        = null;
+let isRunning       = false;
+let currentPassage  = '';
+let currentIndex    = 0;
+let errors          = 0;
+let totalTyped      = 0;
+let correctTyped    = 0;
+let soundEnabled    = true;
+let audioCtx        = null;
+let attemptCount    = 0;
+let performanceHistory = [];
+let nextPassageReady   = null;   // pre-fetched passage from Gemini
+let currentDifficulty  = 'Standard';
+let isAiPassage        = false;
+let passageGenerating  = false;
+
+// ── Default seed passage ────────────────────────────────────
+const DEFAULT_PASSAGE = "The journey of a thousand miles begins with a single step. Success is not about how much money you make, but the difference you make in people's lives. Believe you can and you are halfway there. It does not matter how slowly you go as long as you do not stop. Everything you have ever wanted is on the other side of fear. Hardships often prepare ordinary people for an extraordinary destiny. Dream big and dare to fail. Quality is not an act, it is a habit. The only way to do great work is to love what you do. If you can dream it, you can do it.";
+
+// ── DOM refs ────────────────────────────────────────────────
+const textContainer  = document.getElementById('text-container');
+const typingInput    = document.getElementById('typing-input');
+const timerDisplay   = document.getElementById('timer-display');
+const liveWpm        = document.getElementById('live-wpm');
+const liveAccuracy   = document.getElementById('live-accuracy');
+const liveErrors     = document.getElementById('live-errors');
+const focusOverlay   = document.getElementById('focus-overlay');
+const resultsModal   = document.getElementById('results-modal');
+const nameModal      = document.getElementById('name-modal');
+const nameInput      = document.getElementById('employee-name-input');
+const retakeBtn      = document.getElementById('retake-btn');
+const aiLabel        = document.getElementById('ai-label');
+const historyPanel   = document.getElementById('history-panel');
+const perfHistory    = document.getElementById('perf-history');
+
+// ── Sound ───────────────────────────────────────────────────
+document.getElementById('sound-toggle').onclick = () => {
+    soundEnabled = !soundEnabled;
+    document.getElementById('sound-on-icon').classList.toggle('hidden');
+    document.getElementById('sound-off-icon').classList.toggle('hidden');
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+};
+
+function playTickSound() {
+    if (!soundEnabled) return;
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.02);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.02);
+}
+
+// ── Save name & start ───────────────────────────────────────
+function saveName() {
+    const name = nameInput.value.trim();
+
+    if (name.length < 2) {
+        nameInput.classList.add('border-rose-500');
+        setTimeout(() => nameInput.classList.remove('border-rose-500'), 600);
+        return;
+    }
+
+    employeeName = name;
+    document.getElementById('header-name').innerText = `Typing: ${employeeName}`;
+    nameModal.classList.add('hidden');
+    initTest();
+}
+
+nameInput.addEventListener('keypress', e => { if (e.key === 'Enter') saveName(); });
+
+// ── Gemini API ──────────────────────────────────────────────
+async function callGemini(prompt) {
+    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.85,
+                maxOutputTokens: 400,
+                topP: 0.95
+            }
+        })
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+}
+
+// ── Build adaptive prompt ───────────────────────────────────
+function buildPrompt(stats, history) {
+    const { wpm, accuracy, errors: errs, totalTyped: typed } = stats;
+
+    let difficulty, focus, wordStyle;
+
+    if (wpm < 20 || accuracy < 70) {
+        difficulty = 'Beginner';
+        focus      = 'Use very short, common English words (3-5 letters). Simple sentence structure. Avoid punctuation beyond periods.';
+        wordStyle  = 'simple CVC words and basic vocabulary';
+    } else if (wpm < 35 || accuracy < 80) {
+        difficulty = 'Easy';
+        focus      = 'Use common English words with some longer words (up to 7 letters). Mix short and medium sentences.';
+        wordStyle  = 'everyday vocabulary at elementary level';
+    } else if (wpm < 50 || accuracy < 88) {
+        difficulty = 'Medium';
+        focus      = 'Use a natural mix of common and moderately complex words. Include commas and varied sentence length.';
+        wordStyle  = 'standard professional vocabulary';
+    } else if (wpm < 65 || accuracy < 93) {
+        difficulty = 'Hard';
+        focus      = 'Use longer words (8+ letters), complex sentence structures, commas, semicolons, and varied punctuation to challenge finger dexterity.';
+        wordStyle  = 'professional and technical vocabulary';
+    } else {
+        difficulty = 'Expert';
+        focus      = 'Use sophisticated vocabulary, complex grammar, nested clauses, and a variety of punctuation. Challenge even fast typists.';
+        wordStyle  = 'advanced academic and professional vocabulary';
+    }
+
+    // Accuracy-specific targeting
+    let accuracyNote = '';
+    if (accuracy < 85) {
+        accuracyNote = 'The typist is making many errors, so prioritise simple, familiar words to build accuracy. Avoid rare or tricky spellings.';
+    } else if (accuracy > 95 && wpm > 50) {
+        accuracyNote = 'Accuracy is excellent. Push difficulty harder with tricky letter combinations and finger-stretching words.';
+    }
+
+    // History summary
+    let historyNote = '';
+    if (history.length > 0) {
+        const trend = history.map(h => `WPM ${h.wpm} / Acc ${h.accuracy}%`).join(' → ');
+        historyNote = `\nPerformance trend across ${history.length} previous attempt(s): ${trend}.`;
+    }
+
+    return `You are a typing test passage generator. Generate one single continuous passage for a 2-minute typing test.
+
+Employee stats from last test:
+- WPM: ${wpm}
+- Accuracy: ${accuracy}%
+- Errors: ${errs}
+- Keystrokes: ${typed}
+- Assigned difficulty: ${difficulty}
+${historyNote}
+
+Passage requirements:
+- Difficulty: ${difficulty}
+- ${focus}
+- Use ${wordStyle}
+- ${accuracyNote}
+- Length: approximately 200–240 words
+- Topic: motivational, professional, or educational — no code or technical jargon
+- Do NOT include any heading, label, title, difficulty marker, or explanation
+- Output ONLY the passage text, nothing else
+
+Generate the passage now:`;
+}
+
+// ── Generate and cache next passage ────────────────────────
+async function generateNextPassage(stats) {
+    passageGenerating = true;
+    nextPassageReady  = null;
+
+    const prompt = buildPrompt(stats, performanceHistory);
+
+    try {
+        const text = await callGemini(prompt);
+
+        // Also fetch a short AI insight
+        const insightPrompt = `In one concise sentence (max 20 words), give a specific, encouraging coaching tip for a typist with WPM: ${stats.wpm}, Accuracy: ${stats.accuracy}%. Be direct and actionable.`;
+        const insight = await callGemini(insightPrompt);
+
+        nextPassageReady = {
+            text: cleanPassage(text),
+            difficulty: getDifficultyLabel(stats.wpm, stats.accuracy),
+            insight: insight
         };
 
-        function saveName() {
-            const val = nameInput.value.trim();
-            if (val.length < 2) {
-                nameInput.classList.add('border-rose-500');
-                setTimeout(() => nameInput.classList.remove('border-rose-500'), 500);
-                return;
-            }
-            employeeName = val;
-            document.getElementById('header-name').innerText = `Typing: ${employeeName}`;
-            nameModal.classList.add('hidden');
-            initTest();
+        // Update results modal UI
+        document.getElementById('next-passage-spinner').classList.add('hidden');
+        document.getElementById('next-passage-ready').classList.remove('hidden');
+        document.getElementById('next-passage-label').innerText   = `Next passage ready — ${nextPassageReady.difficulty} difficulty`;
+        document.getElementById('next-difficulty-label').innerText = 'Click "Retake" to start with your personalised passage';
+        document.getElementById('next-passage-status').classList.add('border-emerald-200', 'bg-emerald-50');
+        document.getElementById('next-passage-status').classList.remove('border-slate-100', 'bg-slate-50');
+
+        // Show AI feedback
+        if (insight) {
+            document.getElementById('ai-feedback-text').innerText = insight;
+            document.getElementById('ai-feedback-box').classList.remove('hidden');
         }
 
-        nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveName(); });
+        retakeBtn.disabled = false;
 
-        function initTest() {
-            currentPassage = passages[0];
-            textContainer.innerHTML = '';
-            currentPassage.split('').forEach((char, i) => {
-                const span = document.createElement('span');
-                span.innerText = char;
-                span.classList.add('char');
-                if (i === 0) span.classList.add('current');
-                textContainer.appendChild(span);
-            });
-            
-            currentIndex = 0;
-            errors = 0;
-            totalTyped = 0;
-            correctTyped = 0;
-            timer = TEST_DURATION;
-            isRunning = false;
-            
-            updateStats();
-            updateTimerDisplay();
-            textContainer.scrollTop = 0;
-            
-            typingInput.value = '';
-            resultsModal.classList.add('hidden');
-            focusOverlay.classList.remove('hidden');
-            focusOverlay.style.opacity = "1";
+    } catch (err) {
+        console.error('Gemini error:', err);
+        nextPassageReady = { text: DEFAULT_PASSAGE, difficulty: 'Standard', insight: '' };
+        document.getElementById('next-passage-spinner').classList.add('hidden');
+        document.getElementById('next-passage-label').innerText = 'Could not reach Gemini — using default passage';
+        document.getElementById('next-difficulty-label').innerText = err.message || 'Check your API key or network';
+        document.getElementById('next-passage-ready').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+        document.getElementById('next-passage-ready').classList.remove('hidden');
+        retakeBtn.disabled = false;
+    } finally {
+        passageGenerating = false;
+    }
+}
+
+function cleanPassage(text) {
+    return text
+        .replace(/^(passage|text|difficulty|title|heading)[:\-–].*\n?/gi, '')
+        .replace(/\n+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+function getDifficultyLabel(wpm, accuracy) {
+    if (wpm < 20 || accuracy < 70) return 'Beginner';
+    if (wpm < 35 || accuracy < 80) return 'Easy';
+    if (wpm < 50 || accuracy < 88) return 'Medium';
+    if (wpm < 65 || accuracy < 93) return 'Hard';
+    return 'Expert';
+}
+
+function setDifficultyBadge(label) {
+    const badge = document.getElementById('difficulty-badge');
+    const text  = document.getElementById('difficulty-label');
+    const map   = { Beginner:'pill-beginner', Easy:'pill-easy', Medium:'pill-medium', Hard:'pill-hard', Expert:'pill-expert', Standard:'pill-easy' };
+    badge.className = `px-4 py-2 rounded-xl text-xs font-black shadow-sm ${map[label] || 'pill-easy'}`;
+    text.innerText  = label;
+    badge.classList.remove('hidden');
+}
+
+// ── Render passage ──────────────────────────────────────────
+function renderPassage(text) {
+    textContainer.innerHTML = '';
+    text.split('').forEach((char, i) => {
+        const span = document.createElement('span');
+        span.innerText = char;
+        span.classList.add('char');
+        if (i === 0) span.classList.add('current');
+        textContainer.appendChild(span);
+    });
+}
+
+// ── Init test ───────────────────────────────────────────────
+function initTest() {
+    attemptCount++;
+    document.getElementById('attempt-num').innerText = attemptCount;
+    document.getElementById('attempt-badge').classList.remove('hidden');
+
+    // Choose passage
+    if (nextPassageReady && nextPassageReady.text) {
+        currentPassage   = nextPassageReady.text;
+        currentDifficulty = nextPassageReady.difficulty;
+        isAiPassage      = true;
+        setDifficultyBadge(currentDifficulty);
+        aiLabel.classList.remove('hidden');
+        aiLabel.classList.add('flex');
+    } else {
+        currentPassage    = DEFAULT_PASSAGE;
+        currentDifficulty = 'Standard';
+        isAiPassage       = false;
+        if (attemptCount > 1) {
+            aiLabel.classList.remove('hidden');
+            aiLabel.classList.add('flex');
+        } else {
+            aiLabel.classList.add('hidden');
         }
+        setDifficultyBadge(currentDifficulty);
+    }
 
-        function startTest() {
-            if (isRunning) return;
-            isRunning = true;
-            focusOverlay.style.opacity = "0";
-            setTimeout(() => focusOverlay.classList.add('hidden'), 500);
-            
-            interval = setInterval(() => {
-                timer--;
-                updateTimerDisplay();
-                updateStats();
-                if (timer <= 0) endTest();
-            }, 1000);
+    nextPassageReady = null;
+    renderPassage(currentPassage);
+
+    currentIndex = 0;
+    errors       = 0;
+    totalTyped   = 0;
+    correctTyped = 0;
+    timer        = TEST_DURATION;
+    isRunning    = false;
+
+    updateStats();
+    updateTimerDisplay();
+    textContainer.scrollTop = 0;
+
+    typingInput.value = '';
+    resultsModal.classList.add('hidden');
+    resultsModal.classList.remove('flex');
+    focusOverlay.classList.remove('hidden');
+    focusOverlay.style.opacity = '1';
+}
+
+// ── Start test ──────────────────────────────────────────────
+function startTest() {
+    if (isRunning) return;
+    isRunning = true;
+    focusOverlay.style.opacity = '0';
+    setTimeout(() => focusOverlay.classList.add('hidden'), 500);
+
+    interval = setInterval(() => {
+        timer--;
+        updateTimerDisplay();
+        updateStats();
+
+        // Flash timer red in last 10s
+        if (timer <= 10) timerDisplay.classList.add('timer-warn');
+        else             timerDisplay.classList.remove('timer-warn');
+
+        if (timer <= 0) endTest();
+    }, 1000);
+}
+
+// ── End test ────────────────────────────────────────────────
+function endTest() {
+    clearInterval(interval);
+    isRunning = false;
+    timerDisplay.classList.remove('timer-warn');
+    typingInput.blur();
+
+    const wpm      = calculateWPM();
+    const accuracy = calculateAccuracy();
+
+    // Save to history
+    performanceHistory.push({ wpm, accuracy, errors, attempt: attemptCount });
+    addHistoryCard(wpm, accuracy, errors, attemptCount);
+
+    // Fill results modal
+    document.getElementById('result-employee-name').innerText = employeeName;
+    document.getElementById('final-wpm').innerText       = wpm;
+    document.getElementById('final-accuracy').innerText  = accuracy + '%';
+    document.getElementById('final-keys').innerText      = totalTyped;
+    document.getElementById('final-errors').innerText    = errors;
+
+    // Reset next-passage status UI
+    document.getElementById('next-passage-spinner').classList.remove('hidden');
+    document.getElementById('next-passage-ready').classList.add('hidden');
+    document.getElementById('next-passage-label').innerText   = 'Gemini is crafting your next adaptive passage…';
+    document.getElementById('next-difficulty-label').innerText = '';
+    document.getElementById('next-passage-status').classList.remove('border-emerald-200','bg-emerald-50');
+    document.getElementById('next-passage-status').classList.add('border-slate-100','bg-slate-50');
+    document.getElementById('ai-feedback-box').classList.add('hidden');
+    retakeBtn.disabled = true;
+
+    resultsModal.classList.remove('hidden');
+    resultsModal.classList.add('flex');
+
+    // Trigger Gemini
+    generateNextPassage({ wpm, accuracy, errors, totalTyped });
+}
+
+// ── History cards ───────────────────────────────────────────
+function addHistoryCard(wpm, accuracy, errors, attempt) {
+    historyPanel.classList.remove('hidden');
+    const div = document.createElement('div');
+    div.className = 'shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-center min-w-[90px] fade-in';
+    div.innerHTML = `
+        <p class="text-[9px] uppercase tracking-widest font-black text-slate-400 mb-1">#${attempt}</p>
+        <p class="text-2xl font-black text-blue-700">${wpm}</p>
+        <p class="text-[10px] font-bold text-slate-500">WPM</p>
+        <p class="text-emerald-600 font-black text-xs mt-1">${accuracy}%</p>
+    `;
+    perfHistory.appendChild(div);
+    perfHistory.scrollLeft = perfHistory.scrollWidth;
+}
+
+// ── Stats helpers ───────────────────────────────────────────
+function calculateWPM() {
+    const elapsed = (TEST_DURATION - timer) / 60;
+    if (elapsed <= 0) return 0;
+    return Math.max(0, Math.round((correctTyped / 5) / elapsed));
+}
+
+function calculateAccuracy() {
+    if (totalTyped === 0) return 100;
+    return Math.round((correctTyped / totalTyped) * 100);
+}
+
+function updateStats() {
+    liveWpm.innerText      = calculateWPM();
+    liveAccuracy.innerText = calculateAccuracy() + '%';
+    liveErrors.innerText   = errors;
+}
+
+function updateTimerDisplay() {
+    const m = Math.floor(timer / 60);
+    const s = timer % 60;
+    timerDisplay.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ── Keyboard input ──────────────────────────────────────────
+typingInput.addEventListener('keydown', e => {
+    if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
+    if (timer <= 0) return;
+
+    if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ') playTickSound();
+    if (!isRunning && e.key.length === 1) startTest();
+    if (!isRunning && e.key !== 'Backspace') return;
+
+    const spans = textContainer.querySelectorAll('.char');
+
+    if (e.key === 'Backspace') {
+        if (currentIndex > 0) {
+            spans[currentIndex].classList.remove('current','correct','incorrect');
+            currentIndex--;
+            spans[currentIndex].classList.add('current');
+            spans[currentIndex].classList.remove('correct','incorrect');
         }
+        handleScrolling(spans[currentIndex]);
+        return;
+    }
 
-        function endTest() {
-            clearInterval(interval);
-            isRunning = false;
-            typingInput.blur();
-            
-            document.getElementById('result-employee-name').innerText = employeeName;
-            document.getElementById('final-wpm').innerText = calculateWPM();
-            document.getElementById('final-accuracy').innerText = calculateAccuracy() + '%';
-            document.getElementById('final-keys').innerText = totalTyped;
-            document.getElementById('final-errors').innerText = errors;
-            
-            resultsModal.classList.remove('hidden');
-        }
+    if (e.key.length !== 1) return;
 
-        function updateTimerDisplay() {
-            const mins = Math.floor(timer / 60);
-            const secs = timer % 60;
-            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
+    totalTyped++;
+    const expected = currentPassage[currentIndex];
 
-        function calculateWPM() {
-            const timeElapsedInMinutes = (TEST_DURATION - timer) / 60;
-            if (timeElapsedInMinutes <= 0) return 0;
-            const wpm = Math.round((correctTyped / 5) / timeElapsedInMinutes);
-            return Math.max(0, wpm);
-        }
+    if (e.key === expected) {
+        spans[currentIndex].classList.add('correct');
+        correctTyped++;
+    } else {
+        spans[currentIndex].classList.add('incorrect');
+        errors++;
+    }
 
-        function calculateAccuracy() {
-            if (totalTyped === 0) return 100;
-            return Math.round((correctTyped / totalTyped) * 100);
-        }
+    spans[currentIndex].classList.remove('current');
+    currentIndex++;
 
-        function updateStats() {
-            liveWpm.innerText = calculateWPM();
-            liveAccuracy.innerText = calculateAccuracy() + '%';
-            liveErrors.innerText = errors;
-        }
+    if (currentIndex < spans.length) {
+        spans[currentIndex].classList.add('current');
+        handleScrolling(spans[currentIndex]);
+    } else {
+        endTest();
+    }
 
-        typingInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                resetTest();
-                return;
-            }
+    updateStats();
+});
 
-            if (timer <= 0) return;
-            
-            if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ') {
-                playTickSound();
-            }
+function handleScrolling(el) {
+    const c = textContainer;
+    const target = el.offsetTop - (c.offsetHeight / 2) + (el.offsetHeight / 2);
+    c.scrollTo({ top: target, behavior: 'smooth' });
+}
 
-            if (!isRunning && e.key.length === 1) startTest();
-            if (!isRunning && e.key !== 'Backspace') return;
+// ── Reset ───────────────────────────────────────────────────
+function resetTest() {
+    clearInterval(interval);
+    initTest();
+    typingInput.focus();
+}
 
-            const charSpans = textContainer.querySelectorAll('.char');
-            
-            if (e.key === 'Backspace') {
-                if (currentIndex > 0) {
-                    charSpans[currentIndex].classList.remove('current', 'correct', 'incorrect');
-                    currentIndex--;
-                    charSpans[currentIndex].classList.add('current');
-                    charSpans[currentIndex].classList.remove('correct', 'incorrect');
-                }
-                handleScrolling(charSpans[currentIndex]);
-                return;
-            }
+// ── Focus wiring ─────────────────────────────────────────────
+focusOverlay.addEventListener('click', () => {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    typingInput.focus();
+});
 
-            if (e.key.length !== 1) return;
+document.addEventListener('click', () => {
+    if (resultsModal.classList.contains('hidden') && nameModal.classList.contains('hidden')) {
+        typingInput.focus();
+    }
+});
 
-            const expectedChar = currentPassage[currentIndex];
-            totalTyped++;
+window.onload = () => nameInput.focus();
+</script>
 
-            if (e.key === expectedChar) {
-                charSpans[currentIndex].classList.add('correct');
-                correctTyped++;
-            } else {
-                charSpans[currentIndex].classList.add('incorrect');
-                errors++;
-            }
-
-            charSpans[currentIndex].classList.remove('current');
-            currentIndex++;
-
-            if (currentIndex < charSpans.length) {
-                const nextChar = charSpans[currentIndex];
-                nextChar.classList.add('current');
-                handleScrolling(nextChar);
-            } else {
-                endTest();
-            }
-
-            updateStats();
-        });
-
-        function handleScrolling(element) {
-            const container = document.getElementById('text-container');
-            const elementTop = element.offsetTop;
-            const containerHeight = container.offsetHeight;
-            const targetScroll = elementTop - (containerHeight / 2) + (element.offsetHeight / 2);
-            container.scrollTo({ top: targetScroll, behavior: 'smooth' });
-        }
-
-        function resetTest() {
-            clearInterval(interval);
-            initTest();
-            typingInput.focus();
-        }
-
-        focusOverlay.addEventListener('click', () => {
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            typingInput.focus();
-        });
-
-        document.addEventListener('click', () => {
-            if (resultsModal.classList.contains('hidden') && nameModal.classList.contains('hidden')) {
-                typingInput.focus();
-            }
-        });
-
-        window.onload = () => nameInput.focus();
-    </script>
 </body>
 </html>
