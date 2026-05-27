@@ -109,6 +109,7 @@ button:hover{
   border-radius:12px;
   padding:20px;
   transition:0.25s ease;
+  overflow:auto;
 }
 
 .preview-shell.light{
@@ -122,50 +123,6 @@ button:hover{
 #signature-preview,
 #signature-preview *{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif !important;
-}
-
-.social-table{
-  margin:6px auto 0;
-  border-collapse:collapse;
-}
-
-.social-table td{
-  padding:0 3px 0 0;
-  vertical-align:middle;
-}
-
-.social-table td:last-child{
-  padding-right:0;
-}
-
-.social-link{
-  display:inline-block;
-  line-height:0;
-  text-decoration:none !important;
-  border:none !important;
-}
-
-.social-icon{
-  width:34px;
-  height:34px;
-  display:block;
-  border-radius:50%;
-  overflow:hidden;
-  background:#fff;
-}
-
-.preview-shell.dark .social-icon{
-  background:#1f2937;
-}
-
-.social-icon img{
-  width:28px;
-  height:28px;
-  display:block;
-  border:0;
-  outline:none;
-  margin:3px;
-  object-fit:contain;
 }
 
 @media(max-width:900px){
@@ -182,6 +139,7 @@ button:hover{
 
   <!-- FORM -->
   <div class="glass">
+
     <h2>Employee Details</h2>
 
     <input id="name" placeholder="Full Name">
@@ -197,7 +155,10 @@ button:hover{
     </select>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <label style="color:white;font-size:14px;white-space:nowrap">Company Colour:</label>
+      <label style="color:white;font-size:14px;white-space:nowrap">
+        Company Colour:
+      </label>
+
       <input
         type="color"
         id="companyColor"
@@ -210,7 +171,17 @@ button:hover{
     <input id="phone" placeholder="Mobile">
     <input id="email" placeholder="Email">
     <input id="address" placeholder="Address">
-    <input type="file" id="logoUpload" accept="image/*">
+
+    <input
+      type="file"
+      id="logoUpload"
+      accept="image/*"
+    >
+
+    <input
+      id="logoLink"
+      placeholder="Company Website / Logo Redirect URL"
+    >
 
     <h2 style="margin-top:15px;">Social Links</h2>
 
@@ -219,21 +190,40 @@ button:hover{
     <input id="instagram" placeholder="Instagram URL">
     <input id="youtube" placeholder="YouTube URL">
 
-    <button onclick="copySignature()">Copy Outlook Signature</button>
+    <button onclick="copySignature()">
+      Copy Outlook Signature
+    </button>
+
   </div>
 
   <!-- PREVIEW -->
   <div class="glass">
+
     <h2>Signature Preview</h2>
 
     <div class="mode-switch">
-      <button type="button" id="lightBtn" class="active" onclick="setPreviewMode('light')">Light Mode</button>
-      <button type="button" id="darkBtn" onclick="setPreviewMode('dark')">Dark Mode</button>
+      <button
+        type="button"
+        id="lightBtn"
+        class="active"
+        onclick="setPreviewMode('light')"
+      >
+        Light Mode
+      </button>
+
+      <button
+        type="button"
+        id="darkBtn"
+        onclick="setPreviewMode('dark')"
+      >
+        Dark Mode
+      </button>
     </div>
 
     <div id="previewShell" class="preview-shell light">
       <div id="signature-preview"></div>
     </div>
+
   </div>
 
 </div>
@@ -251,7 +241,36 @@ function escapeHtml(str){
     .replace(/'/g, "&#39;");
 }
 
+function normalizeUrl(url){
+  if(!url) return "";
+
+  if(!/^https?:\/\//i.test(url)){
+    return "https://" + url;
+  }
+
+  return url;
+}
+
+function safeUrl(url){
+  try{
+    const normalized = normalizeUrl(url);
+    const parsed = new URL(normalized);
+
+    if(
+      parsed.protocol === "http:" ||
+      parsed.protocol === "https:"
+    ){
+      return parsed.href;
+    }
+
+    return "";
+  }catch{
+    return "";
+  }
+}
+
 function setPreviewMode(mode){
+
   currentMode = mode;
 
   const shell = document.getElementById("previewShell");
@@ -268,76 +287,252 @@ function setPreviewMode(mode){
 }
 
 const inputs = [
-  "name","title","phone","email","address",
-  "linkedin","facebook","instagram","youtube"
+  "name",
+  "title",
+  "phone",
+  "email",
+  "address",
+  "linkedin",
+  "facebook",
+  "instagram",
+  "youtube",
+  "logoLink"
 ];
 
 inputs.forEach(id => {
-  document.getElementById(id).addEventListener("input", renderPreview);
+  document
+    .getElementById(id)
+    .addEventListener("input", renderPreview);
 });
 
 function buildSignatureHTML(){
-  const name = escapeHtml(document.getElementById("name").value);
-  const title = escapeHtml(document.getElementById("title").value);
-  const company = escapeHtml(document.getElementById("companySelect").value);
-  const companyColor = document.getElementById("companyColor").value;
-  const phone = escapeHtml(document.getElementById("phone").value);
-  const email = escapeHtml(document.getElementById("email").value);
-  const address = escapeHtml(document.getElementById("address").value);
 
-  const linkedin = document.getElementById("linkedin").value.trim();
-  const facebook = document.getElementById("facebook").value.trim();
-  const instagram = document.getElementById("instagram").value.trim();
-  const youtube = document.getElementById("youtube").value.trim();
+  const name = escapeHtml(
+    document.getElementById("name").value
+  );
 
-  const textColor = currentMode === "dark" ? "#f3f4f6" : "#111111";
-  const secondaryColor = currentMode === "dark" ? "#d1d5db" : "#4b5563";
-  const borderColor = currentMode === "dark" ? "#374151" : "#e5e7eb";
-  const bgColor = currentMode === "dark" ? "#111827" : "#ffffff";
-  const iconBg = currentMode === "dark" ? "#1f2937" : "#ffffff";
+  const title = escapeHtml(
+    document.getElementById("title").value
+  );
 
-  const logoHtml = logoDataUrl
-    ? `<img 
-          src="${logoDataUrl}" 
-          alt="Logo" 
-          style="
-            width:180px;
-            max-width:180px;
-            display:block;
-            margin:0 auto 10px;
-            border:0;
-            outline:none;
-          "
-       >`
+  const company = escapeHtml(
+    document.getElementById("companySelect").value
+  );
+
+  const companyColor =
+    document.getElementById("companyColor").value;
+
+  const phone = escapeHtml(
+    document.getElementById("phone").value
+  );
+
+  const email = escapeHtml(
+    document.getElementById("email").value
+  );
+
+  const address = escapeHtml(
+    document.getElementById("address").value
+  );
+
+  const logoLink = safeUrl(
+    document.getElementById("logoLink").value.trim()
+  );
+
+  const linkedin = safeUrl(
+    document.getElementById("linkedin").value.trim()
+  );
+
+  const facebook = safeUrl(
+    document.getElementById("facebook").value.trim()
+  );
+
+  const instagram = safeUrl(
+    document.getElementById("instagram").value.trim()
+  );
+
+  const youtube = safeUrl(
+    document.getElementById("youtube").value.trim()
+  );
+
+  const textColor =
+    currentMode === "dark"
+      ? "#f3f4f6"
+      : "#111111";
+
+  const secondaryColor =
+    currentMode === "dark"
+      ? "#d1d5db"
+      : "#4b5563";
+
+  const borderColor =
+    currentMode === "dark"
+      ? "#374151"
+      : "#e5e7eb";
+
+  const bgColor =
+    currentMode === "dark"
+      ? "#111827"
+      : "#ffffff";
+
+  const iconBg =
+    currentMode === "dark"
+      ? "#1f2937"
+      : "#ffffff";
+
+  const logoImage = logoDataUrl
+    ? `
+      <img
+        src="${logoDataUrl}"
+        alt="Logo"
+        style="
+          width:180px;
+          max-width:180px;
+          display:block;
+          margin:0 auto 10px;
+          border:0;
+          outline:none;
+        "
+      >
+    `
     : "";
 
-  function iconCell(src, href, alt){
-    if(!href) return "";
-    return `
-      <td style="padding-right:3px;vertical-align:middle;">
-        <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;line-height:0;text-decoration:none;border:none;">
-          <span style="width:34px;height:34px;display:block;border-radius:50%;overflow:hidden;background:${iconBg};">
-            <img src="${src}" alt="${alt}" width="28" height="28" style="width:28px;height:28px;display:block;border:0;outline:none;margin:3px;object-fit:contain;">
-          </span>
+  const logoHtml =
+    logoLink && logoImage
+      ? `
+        <a
+          href="${logoLink}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="
+            text-decoration:none;
+            border:none;
+            display:inline-block;
+          "
+        >
+          ${logoImage}
         </a>
-      </td>`;
+      `
+      : logoImage;
+
+  function iconCell(src, href, alt){
+
+    if(!href) return "";
+
+    return `
+      <td
+        style="
+          padding-right:3px;
+          vertical-align:middle;
+        "
+      >
+
+        <a
+          href="${href}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="
+            display:inline-block;
+            line-height:0;
+            text-decoration:none;
+            border:none;
+          "
+        >
+
+          <span
+            style="
+              width:34px;
+              height:34px;
+              display:block;
+              border-radius:50%;
+              overflow:hidden;
+              background:${iconBg};
+            "
+          >
+
+            <img
+              src="${src}"
+              alt="${alt}"
+              width="28"
+              height="28"
+              style="
+                width:28px;
+                height:28px;
+                display:block;
+                border:0;
+                outline:none;
+                margin:3px;
+                object-fit:contain;
+              "
+            >
+
+          </span>
+
+        </a>
+
+      </td>
+    `;
   }
 
   const socialRow = `
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:6px auto 0;border-collapse:collapse;">
+    <table
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        margin:6px auto 0;
+        border-collapse:collapse;
+      "
+    >
       <tr>
-        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg", linkedin, "LinkedIn")}
-        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png", facebook, "Facebook")}
-        ${iconCell("https://toppng.com/uploads/preview/instagram-logo-circle-11549679754rhbcorxntv.png", instagram, "Instagram")}
-        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/YouTube_social_red_circle_%282017%29.svg/960px-YouTube_social_red_circle_%282017%29.svg.png", youtube, "YouTube")}
+
+        ${iconCell(
+          "https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg",
+          linkedin,
+          "LinkedIn"
+        )}
+
+        ${iconCell(
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png",
+          facebook,
+          "Facebook"
+        )}
+
+        ${iconCell(
+          "https://toppng.com/uploads/preview/instagram-logo-circle-11549679754rhbcorxntv.png",
+          instagram,
+          "Instagram"
+        )}
+
+        ${iconCell(
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/YouTube_social_red_circle_%282017%29.svg/960px-YouTube_social_red_circle_%282017%29.svg.png",
+          youtube,
+          "YouTube"
+        )}
+
       </tr>
-    </table>`;
+    </table>
+  `;
 
   const phoneHtml = phone
     ? `
       <div>
-        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Mobile:</strong>
-        <span style="font-family:Verdana, sans-serif;font-style:italic;">${phone}</span>
+        <strong
+          style="
+            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
+            font-style:normal;
+          "
+        >
+          Mobile:
+        </strong>
+
+        <span
+          style="
+            font-family:Verdana, sans-serif;
+            font-style:italic;
+          "
+        >
+          ${phone}
+        </span>
       </div>
     `
     : "";
@@ -345,8 +540,23 @@ function buildSignatureHTML(){
   const emailHtml = email
     ? `
       <div>
-        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Email:</strong>
-        <span style="font-family:Verdana, sans-serif;font-style:italic;">${email}</span>
+        <strong
+          style="
+            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
+            font-style:normal;
+          "
+        >
+          Email:
+        </strong>
+
+        <span
+          style="
+            font-family:Verdana, sans-serif;
+            font-style:italic;
+          "
+        >
+          ${email}
+        </span>
       </div>
     `
     : "";
@@ -354,66 +564,168 @@ function buildSignatureHTML(){
   const addressHtml = address
     ? `
       <div style="margin-top:6px;">
-        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Address:</strong>
-        <span style="font-family:Verdana, sans-serif;font-style:italic;">${address}</span>
+
+        <strong
+          style="
+            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
+            font-style:normal;
+          "
+        >
+          Address:
+        </strong>
+
+        <span
+          style="
+            font-family:Verdana, sans-serif;
+            font-style:italic;
+          "
+        >
+          ${address}
+        </span>
+
       </div>
     `
     : "";
 
   return `
-    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${bgColor};color:${textColor};font-family:'Arial Rounded MT Bold', Arial, sans-serif;">
+    <table
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        border-collapse:collapse;
+        background:${bgColor};
+        color:${textColor};
+        font-family:'Arial Rounded MT Bold', Arial, sans-serif;
+      "
+    >
+
       <tr>
-        <td style="
+
+        <td
+          style="
             width:220px;
             padding-right:20px;
             vertical-align:top;
             text-align:center;
-          ">
+          "
+        >
+
           ${logoHtml}
+
           ${socialRow}
+
         </td>
-        <td style="
+
+        <td
+          style="
             border-left:2px solid ${borderColor};
             padding-left:20px;
             vertical-align:middle;
-          ">
-          <div style="font-size:20px;font-weight:700;line-height:1.2;color:${textColor};">${name}</div>
-          <div style="font-size:14px;line-height:1.5;color:${secondaryColor};">${title}</div>
-          <div style="font-size:14px;line-height:1.5;color:${companyColor};font-weight:700;margin-bottom:8px;">${company}</div>
-          <div style="font-size:14px;line-height:1.6;color:${textColor};">
-            ${phoneHtml}
-            ${emailHtml}
-            ${addressHtml}
+          "
+        >
+
+          <div
+            style="
+              font-size:20px;
+              font-weight:700;
+              line-height:1.2;
+              color:${textColor};
+            "
+          >
+            ${name}
           </div>
+
+          <div
+            style="
+              font-size:14px;
+              line-height:1.5;
+              color:${secondaryColor};
+            "
+          >
+            ${title}
+          </div>
+
+          <div
+            style="
+              font-size:14px;
+              line-height:1.5;
+              color:${companyColor};
+              font-weight:700;
+              margin-bottom:8px;
+            "
+          >
+            ${company}
+          </div>
+
+          <div
+            style="
+              font-size:14px;
+              line-height:1.6;
+              color:${textColor};
+            "
+          >
+
+            ${phoneHtml}
+
+            ${emailHtml}
+
+            ${addressHtml}
+
+          </div>
+
         </td>
+
       </tr>
+
     </table>
   `;
 }
 
 function renderPreview(){
-  document.getElementById("signature-preview").innerHTML = buildSignatureHTML();
+
+  document.getElementById(
+    "signature-preview"
+  ).innerHTML = buildSignatureHTML();
 }
 
-document.getElementById("logoUpload").addEventListener("change", function(){
-  const file = this.files[0];
-  if(!file) return;
+document
+  .getElementById("logoUpload")
+  .addEventListener("change", function(){
 
-  const reader = new FileReader();
-  reader.onload = function(e){
-    logoDataUrl = e.target.result;
-    renderPreview();
-  };
-  reader.readAsDataURL(file);
+    const file = this.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+      logoDataUrl = e.target.result;
+
+      renderPreview();
+    };
+
+    reader.readAsDataURL(file);
 });
 
 async function copySignature(){
+
   const html = buildSignatureHTML();
 
   try{
-    const blob = new Blob([html], { type:"text/html" });
+
+    const blob = new Blob(
+      [html],
+      { type:"text/html" }
+    );
+
     const textBlob = new Blob(
-      [html.replace(/<br>/g, "\n").replace(/<[^>]*>/g, "")],
+      [
+        html
+          .replace(/<br>/g, "\n")
+          .replace(/<[^>]*>/g, "")
+      ],
       { type:"text/plain" }
     );
 
@@ -424,25 +736,37 @@ async function copySignature(){
       })
     ]);
 
-    alert("Signature copied. Paste into Outlook signature editor.");
+    alert(
+      "Signature copied. Paste into Outlook signature editor."
+    );
+
   }catch(err){
+
     const temp = document.createElement("div");
+
     temp.innerHTML = html;
+
     document.body.appendChild(temp);
 
     const range = document.createRange();
+
     range.selectNode(temp);
 
     const sel = window.getSelection();
+
     sel.removeAllRanges();
+
     sel.addRange(range);
 
     document.execCommand("copy");
 
     sel.removeAllRanges();
+
     document.body.removeChild(temp);
 
-    alert("Signature copied. Paste into Outlook signature editor.");
+    alert(
+      "Signature copied. Paste into Outlook signature editor."
+    );
   }
 }
 
