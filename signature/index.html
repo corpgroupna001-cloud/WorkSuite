@@ -170,6 +170,7 @@ button:hover{
 
     <input id="phone" placeholder="Mobile">
     <input id="email" placeholder="Email">
+    <input id="website" placeholder="Website">
     <input id="address" placeholder="Address">
 
     <input
@@ -242,6 +243,7 @@ function escapeHtml(str){
 }
 
 function normalizeUrl(url){
+
   if(!url) return "";
 
   if(!/^https?:\/\//i.test(url)){
@@ -252,7 +254,9 @@ function normalizeUrl(url){
 }
 
 function safeUrl(url){
+
   try{
+
     const normalized = normalizeUrl(url);
     const parsed = new URL(normalized);
 
@@ -264,9 +268,18 @@ function safeUrl(url){
     }
 
     return "";
+
   }catch{
     return "";
   }
+}
+
+function cleanWebsite(url){
+
+  return url
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/$/, "");
 }
 
 function setPreviewMode(mode){
@@ -291,6 +304,7 @@ const inputs = [
   "title",
   "phone",
   "email",
+  "website",
   "address",
   "linkedin",
   "facebook",
@@ -300,9 +314,11 @@ const inputs = [
 ];
 
 inputs.forEach(id => {
+
   document
     .getElementById(id)
     .addEventListener("input", renderPreview);
+
 });
 
 function buildSignatureHTML(){
@@ -329,6 +345,14 @@ function buildSignatureHTML(){
   const email = escapeHtml(
     document.getElementById("email").value
   );
+
+  const website = safeUrl(
+    document.getElementById("website").value.trim()
+  );
+
+  const cleanWebsiteText = website
+    ? cleanWebsite(website)
+    : "";
 
   const address = escapeHtml(
     document.getElementById("address").value
@@ -516,21 +540,8 @@ function buildSignatureHTML(){
   const phoneHtml = phone
     ? `
       <div>
-        <strong
-          style="
-            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
-            font-style:normal;
-          "
-        >
-          Mobile:
-        </strong>
-
-        <span
-          style="
-            font-family:Verdana, sans-serif;
-            font-style:italic;
-          "
-        >
+        <strong>Mobile:</strong>
+        <span style="font-family:Verdana, sans-serif;font-style:italic;">
           ${phone}
         </span>
       </div>
@@ -540,23 +551,32 @@ function buildSignatureHTML(){
   const emailHtml = email
     ? `
       <div>
-        <strong
-          style="
-            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
-            font-style:normal;
-          "
-        >
-          Email:
-        </strong>
+        <strong>Email:</strong>
+        <span style="font-family:Verdana, sans-serif;font-style:italic;">
+          ${email}
+        </span>
+      </div>
+    `
+    : "";
 
-        <span
+  const websiteHtml = website
+    ? `
+      <div>
+        <strong>Web:</strong>
+
+        <a
+          href="${website}"
+          target="_blank"
+          rel="noopener noreferrer"
           style="
             font-family:Verdana, sans-serif;
             font-style:italic;
+            color:#111111;
+            text-decoration:none;
           "
         >
-          ${email}
-        </span>
+          ${cleanWebsiteText}
+        </a>
       </div>
     `
     : "";
@@ -564,15 +584,7 @@ function buildSignatureHTML(){
   const addressHtml = address
     ? `
       <div style="margin-top:6px;">
-
-        <strong
-          style="
-            font-family:'Arial Rounded MT Bold', Arial, sans-serif;
-            font-style:normal;
-          "
-        >
-          Address:
-        </strong>
+        <strong>Address:</strong>
 
         <span
           style="
@@ -582,7 +594,6 @@ function buildSignatureHTML(){
         >
           ${address}
         </span>
-
       </div>
     `
     : "";
@@ -669,6 +680,8 @@ function buildSignatureHTML(){
             ${phoneHtml}
 
             ${emailHtml}
+
+            ${websiteHtml}
 
             ${addressHtml}
 
