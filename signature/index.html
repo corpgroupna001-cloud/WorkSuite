@@ -1,128 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Email Signature Generator</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
-
 *{
-box-sizing:border-box;
-font-family:Segoe UI, Arial;
+  box-sizing:border-box;
+  font-family:Segoe UI, Arial, sans-serif;
 }
 
 body{
-margin:0;
-min-height:100vh;
-background:linear-gradient(135deg,#6d28d9,#9333ea,#0ea5e9);
-display:flex;
-align-items:center;
-justify-content:center;
-padding:40px;
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(135deg,#6d28d9,#9333ea,#0ea5e9);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px;
 }
 
 /* layout */
-
 .container{
-width:100%;
-max-width:1200px;
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:35px;
+  width:100%;
+  max-width:1200px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:35px;
 }
 
 /* glass card */
-
 .glass{
-background:rgba(255,255,255,0.15);
-backdrop-filter:blur(20px);
-border-radius:20px;
-border:1px solid rgba(255,255,255,0.2);
-padding:28px;
-box-shadow:0 15px 40px rgba(0,0,0,0.2);
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(20px);
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.2);
+  padding:28px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.2);
 }
 
 h2{
-color:white;
-margin-bottom:18px;
+  color:white;
+  margin-bottom:18px;
 }
 
 /* inputs */
-
-input{
-width:100%;
-padding:12px 14px;
-border-radius:10px;
-border:none;
-margin-bottom:12px;
-background:rgba(255,255,255,0.25);
-color:white;
-font-size:14px;
-outline:none;
+input,
+select{
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  border:none;
+  margin-bottom:12px;
+  background:rgba(255,255,255,0.25);
+  color:white;
+  font-size:14px;
+  outline:none;
 }
 
 input::placeholder{
-color:rgba(255,255,255,0.7);
+  color:rgba(255,255,255,0.7);
 }
 
 select{
-width:100%;
-padding:12px 14px;
-border-radius:10px;
-border:none;
-margin-bottom:12px;
-background:rgba(255,255,255,0.25);
-color:white;
-font-size:14px;
-outline:none;
-appearance:none;
-cursor:pointer;
+  appearance:none;
+  cursor:pointer;
 }
 
 select option{
-background:#6d28d9;
-color:white;
+  background:#6d28d9;
+  color:white;
 }
 
 /* button */
-
 button{
-width:100%;
-padding:12px;
-border-radius:10px;
-border:none;
-background:white;
-color:#6d28d9;
-font-weight:600;
-cursor:pointer;
-transition:0.25s;
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:white;
+  color:#6d28d9;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.25s;
 }
 
 button:hover{
-transform:scale(1.03);
-box-shadow:0 10px 20px rgba(0,0,0,0.25);
+  transform:scale(1.03);
+  box-shadow:0 10px 20px rgba(0,0,0,0.25);
 }
 
-/* preview */
+/* mode toggle */
+.mode-switch{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px;
+}
 
+.mode-switch button{
+  width:50%;
+  background:rgba(255,255,255,0.22);
+  color:white;
+  border:1px solid rgba(255,255,255,0.25);
+}
+
+.mode-switch button.active{
+  background:white;
+  color:#6d28d9;
+}
+
+/* preview base */
 .preview{
-background:white;
-border-radius:12px;
-padding:20px;
+  border-radius:12px;
+  padding:20px;
+  transition:0.3s ease;
 }
 
-.social img{
-width:24px;
-margin-right:6px;
+/* light preview */
+.preview.light{
+  background:white;
+  color:#111;
+}
+
+.preview.light #ptitle{
+  color:#4b5563;
+}
+
+.preview.light #pphone,
+.preview.light #pemail,
+.preview.light #paddress{
+  color:#111;
+}
+
+.preview.light td.divider{
+  border-left:2px solid #e5e7eb;
+}
+
+.preview.light .social-icon{
+  background:#fff;
+}
+
+/* dark preview */
+.preview.dark{
+  background:#111827;
+  color:#f3f4f6;
+}
+
+.preview.dark #ptitle{
+  color:#d1d5db;
+}
+
+.preview.dark #pphone,
+.preview.dark #pemail,
+.preview.dark #paddress{
+  color:#f3f4f6;
+}
+
+.preview.dark td.divider{
+  border-left:2px solid #374151;
+}
+
+.preview.dark .social-icon{
+  background:#1f2937;
+}
+
+/* signature font */
+#signature-preview,
+#signature-preview *{
+  font-family:"Arial Rounded MT Bold", Arial, sans-serif !important;
+}
+
+/* social icons */
+.social-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top:8px;
+  flex-wrap:nowrap;
+}
+
+.social-row a{
+  text-decoration:none !important;
+  border:none !important;
+  display:inline-flex;
+  line-height:0;
+}
+
+.social-icon{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+.social-icon img{
+  width:26px;
+  height:26px;
+  object-fit:contain;
+  display:block;
 }
 
 @media(max-width:900px){
-.container{
-grid-template-columns:1fr;
+  .container{
+    grid-template-columns:1fr;
+  }
 }
-}
-
 </style>
 </head>
 
@@ -130,225 +218,219 @@ grid-template-columns:1fr;
 
 <div class="container">
 
-<!-- FORM -->
-<div class="glass">
+  <!-- FORM -->
+  <div class="glass">
+    <h2>Employee Details</h2>
 
-<h2>Employee Details</h2>
+    <input id="name" placeholder="Full Name">
+    <input id="title" placeholder="Job Title">
 
-<input id="name" placeholder="Full Name">
-<input id="title" placeholder="Job Title">
+    <select id="companySelect" onchange="selectCompany()">
+      <option value="">-- Select Company --</option>
+      <option value="Jobways Point LLP">Jobways Point LLP</option>
+      <option value="Nova Sportsmart Private Limited">Nova Sportsmart Private Limited</option>
+      <option value="Protathlitis Sportsmart LLP">Protathlitis Sportsmart LLP</option>
+      <option value="Navyug Raise A Player Foundation">Navyug Raise A Player Foundation</option>
+      <option value="GenieLamp Private Limited">GenieLamp Private Limited</option>
+    </select>
 
-<select id="companySelect" onchange="selectCompany()">
-<option value="">-- Select Company --</option>
-<option value="Jobways Point LLP">Jobways Point LLP</option>
-<option value="Nova Sportsmart Private Limited">Nova Sportsmart Private Limited</option>
-<option value="Protathlitis Sportsmart LLP">Protathlitis Sportsmart LLP</option>
-<option value="Navyug Raise A Player Foundation">Navyug Raise A Player Foundation</option>
-<option value="GenieLamp Private Limited">GenieLamp Private Limited</option>
-</select>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label style="color:white;font-size:14px;white-space:nowrap">Company Colour:</label>
+      <input
+        type="color"
+        id="companyColor"
+        value="#dc2626"
+        style="width:48px;height:38px;padding:2px 4px;margin-bottom:0;cursor:pointer;border-radius:8px"
+        oninput="updateCompanyColor()"
+      >
+    </div>
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-<label style="color:white;font-size:14px;white-space:nowrap">Company Colour:</label>
-<input type="color" id="companyColor" value="#dc2626" style="width:48px;height:38px;padding:2px 4px;margin-bottom:0;cursor:pointer;border-radius:8px" oninput="updateCompanyColor()">
+    <input id="phone" placeholder="Mobile">
+    <input id="email" placeholder="Email">
+    <input id="address" placeholder="Address">
+    <input type="file" id="logoUpload" accept="image/*">
+
+    <h2 style="margin-top:15px;">Social Links</h2>
+
+    <input id="linkedin" placeholder="LinkedIn URL">
+    <input id="facebook" placeholder="Facebook URL">
+    <input id="instagram" placeholder="Instagram URL">
+    <input id="youtube" placeholder="YouTube URL">
+
+    <button onclick="copySignature()">Copy Outlook Signature</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="glass">
+    <h2>Signature Preview</h2>
+
+    <div class="mode-switch">
+      <button type="button" id="lightBtn" class="active" onclick="setPreviewMode('light')">Light Mode</button>
+      <button type="button" id="darkBtn" onclick="setPreviewMode('dark')">Dark Mode</button>
+    </div>
+
+    <div id="signature-preview" class="preview light">
+      <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding-right:18px;vertical-align:top;text-align:center;">
+            <img id="logoPreview" style="width:120px;display:none;margin-bottom:8px" alt="Logo">
+
+            <div class="social-row">
+              <a id="linkedinLink" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <div class="social-icon">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg" alt="LinkedIn">
+                </div>
+              </a>
+
+              <a id="facebookLink" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <div class="social-icon">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png" alt="Facebook">
+                </div>
+              </a>
+
+              <a id="instagramLink" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <div class="social-icon">
+                  <img src="https://toppng.com/uploads/preview/instagram-logo-circle-11549679754rhbcorxntv.png" alt="Instagram">
+                </div>
+              </a>
+
+              <a id="youtubeLink" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                <div class="social-icon">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/YouTube_social_red_circle_%282017%29.svg/960px-YouTube_social_red_circle_%282017%29.svg.png" alt="YouTube">
+                </div>
+              </a>
+            </div>
+          </td>
+
+          <td class="divider" style="padding-left:18px;vertical-align:top;">
+            <div style="font-size:14px;line-height:1.6;">
+              <div id="pname" style="font-size:20px;font-weight:700"></div>
+              <div id="ptitle"></div>
+              <div id="pcompany" style="font-weight:700;margin-bottom:8px"></div>
+              <div id="pphone"></div>
+              <div id="pemail"></div>
+              <div id="paddress" style="margin-top:6px"></div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </div>
-<input id="phone" placeholder="Mobile">
-<input id="email" placeholder="Email">
-<input id="address" placeholder="Address">
-
-<input type="file" id="logoUpload" accept="image/*">
-
-<h2 style="margin-top:15px;">Social Links</h2>
-
-<input id="linkedin" placeholder="LinkedIn URL">
-<input id="facebook" placeholder="Facebook URL">
-<input id="instagram" placeholder="Instagram URL">
-<input id="youtube" placeholder="YouTube URL">
-
-<button onclick="copySignature()">Copy Outlook Signature</button>
-
-</div>
-
-
-<!-- PREVIEW -->
-<div class="glass">
-
-<h2>Signature Preview</h2>
-
-<div id="signature-preview" class="preview">
-
-<table cellpadding="0" cellspacing="0">
-<tr>
-
-<td style="padding-right:18px;vertical-align:top">
-
-<div style="text-align:center">
-
-<img id="logoPreview" style="width:120px;display:none;margin-bottom:8px">
-
-<div class="social">
-
-<a id="linkedinLink" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/174/174857.png">
-</a>
-
-<a id="facebookLink" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/733/733547.png">
-</a>
-
-<a id="instagramLink" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png">
-</a>
-
-<a id="youtubeLink" target="_blank">
-<img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png">
-</a>
-
-</div>
-
-</div>
-
-</td>
-
-
-<td style="border-left:2px solid #e5e7eb;padding-left:18px">
-
-<div style="font-size:14px;line-height:1.6;color:#111">
-
-<div id="pname" style="font-size:18px;font-weight:700"></div>
-
-<div id="ptitle" style="color:#374151"></div>
-
-<div id="pcompany" style="color:#dc2626;font-weight:700;margin-bottom:8px"></div>
-
-<div id="pphone"></div>
-<div id="pemail"></div>
-<div id="paddress" style="margin-top:6px"></div>
-
-</div>
-
-</td>
-
-</tr>
-</table>
-
-</div>
-
-</div>
-
-</div>
-
 
 <script>
+let currentMode = "light";
 
+function setPreviewMode(mode){
+  currentMode = mode;
+
+  const preview = document.getElementById("signature-preview");
+  const lightBtn = document.getElementById("lightBtn");
+  const darkBtn = document.getElementById("darkBtn");
+
+  preview.classList.remove("light", "dark");
+  preview.classList.add(mode);
+
+  lightBtn.classList.toggle("active", mode === "light");
+  darkBtn.classList.toggle("active", mode === "dark");
+}
+
+/* company */
 function selectCompany(){
-const val=document.getElementById("companySelect").value;
-document.getElementById("pcompany").innerText=val;
+  const val = document.getElementById("companySelect").value;
+  document.getElementById("pcompany").innerText = val;
 }
 
 function updateCompanyColor(){
-const color=document.getElementById("companyColor").value;
-document.getElementById("pcompany").style.color=color;
+  const color = document.getElementById("companyColor").value;
+  document.getElementById("pcompany").style.color = color;
 }
 
-/* update preview */
-
+/* inputs */
 const inputs = [
-"name","title","phone","email","address",
-"linkedin","facebook","instagram","youtube"
+  "name","title","phone","email","address",
+  "linkedin","facebook","instagram","youtube"
 ];
 
-inputs.forEach(id=>{
-document.getElementById(id).addEventListener("input",updatePreview);
+inputs.forEach(id => {
+  document.getElementById(id).addEventListener("input", updatePreview);
 });
 
+/* preview update */
 function updatePreview(){
+  const name = document.getElementById("name").value;
+  const title = document.getElementById("title").value;
+  const phone = document.getElementById("phone").value;
+  const email = document.getElementById("email").value;
+  const address = document.getElementById("address").value;
 
-const name=document.getElementById("name").value;
-const title=document.getElementById("title").value;
-const phone=document.getElementById("phone").value;
-const email=document.getElementById("email").value;
-const address=document.getElementById("address").value;
+  document.getElementById("pname").innerText = name;
+  document.getElementById("ptitle").innerText = title;
 
-document.getElementById("pname").innerText=name;
-document.getElementById("ptitle").innerText=title;
+  document.getElementById("pphone").innerHTML = phone ? "<strong>Mobile:</strong> " + phone : "";
+  document.getElementById("pemail").innerHTML = email ? "<strong>Email:</strong> " + email : "";
+  document.getElementById("paddress").innerHTML = address ? "<strong>Address:</strong> " + address : "";
 
-document.getElementById("pphone").innerHTML =
-phone ? "<strong>Mobile:</strong> "+phone : "";
-
-document.getElementById("pemail").innerHTML =
-email ? "<strong>Email:</strong> "+email : "";
-
-document.getElementById("paddress").innerHTML =
-address ? "<strong>Address:</strong> "+address : "";
-
+  updateSocial();
+}
 
 /* social */
-
-updateSocial();
-
-}
-
 function updateSocial(){
+  ["linkedin","facebook","instagram","youtube"].forEach(id => {
+    const value = document.getElementById(id).value;
+    const link = document.getElementById(id + "Link");
 
-["linkedin","facebook","instagram","youtube"].forEach(id=>{
-
-const value=document.getElementById(id).value;
-const link=document.getElementById(id+"Link");
-
-if(value){
-link.href=value;
-link.style.display="inline";
-}else{
-link.style.display="none";
-}
-
-});
-
+    if(value){
+      link.href = value;
+      link.style.display = "inline-flex";
+    }else{
+      link.style.display = "none";
+      link.removeAttribute("href");
+    }
+  });
 }
 
 /* logo upload */
+document.getElementById("logoUpload").addEventListener("change", function(){
+  const file = this.files[0];
+  if(!file) return;
 
-document.getElementById("logoUpload").addEventListener("change",function(){
-
-const file=this.files[0];
-if(!file) return;
-
-const reader=new FileReader();
-
-reader.onload=function(e){
-
-const img=document.getElementById("logoPreview");
-img.src=e.target.result;
-img.style.display="block";
-
-};
-
-reader.readAsDataURL(file);
-
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = document.getElementById("logoPreview");
+    img.src = e.target.result;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(file);
 });
 
-
 /* copy signature */
+async function copySignature(){
+  const el = document.getElementById("signature-preview");
 
-function copySignature(){
+  try{
+    const html = el.outerHTML;
+    const blob = new Blob([html], { type:"text/html" });
+    const data = [new ClipboardItem({ "text/html": blob })];
+    await navigator.clipboard.write(data);
+    alert("Signature copied. Paste into Outlook signature editor.");
+  }catch(err){
+    const range = document.createRange();
+    range.selectNode(el);
 
-const el=document.getElementById("signature-preview");
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
 
-const range=document.createRange();
-range.selectNode(el);
+    document.execCommand("copy");
+    sel.removeAllRanges();
 
-const sel=window.getSelection();
-sel.removeAllRanges();
-sel.addRange(range);
-
-document.execCommand("copy");
-
-alert("Signature copied. Paste into Outlook signature editor.");
-
+    alert("Signature copied. Paste into Outlook signature editor.");
+  }
 }
 
 updatePreview();
-
+setPreviewMode("light");
 </script>
 
 </body>
