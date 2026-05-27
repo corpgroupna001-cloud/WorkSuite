@@ -87,7 +87,6 @@ button:hover{
   box-shadow:0 10px 20px rgba(0,0,0,0.25);
 }
 
-/* mode buttons */
 .mode-switch{
   display:flex;
   gap:10px;
@@ -106,7 +105,6 @@ button:hover{
   color:#6d28d9;
 }
 
-/* preview container */
 .preview-shell{
   border-radius:12px;
   padding:20px;
@@ -126,7 +124,6 @@ button:hover{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif !important;
 }
 
-/* Outlook-friendly social icons table */
 .social-table{
   margin:8px auto 0;
   border-collapse:collapse;
@@ -190,7 +187,7 @@ button:hover{
     <input id="name" placeholder="Full Name">
     <input id="title" placeholder="Job Title">
 
-    <select id="companySelect" onchange="selectCompany()">
+    <select id="companySelect" onchange="renderPreview()">
       <option value="">-- Select Company --</option>
       <option value="Jobways Point LLP">Jobways Point LLP</option>
       <option value="Nova Sportsmart Private Limited">Nova Sportsmart Private Limited</option>
@@ -206,7 +203,7 @@ button:hover{
         id="companyColor"
         value="#dc2626"
         style="width:48px;height:38px;padding:2px 4px;margin-bottom:0;cursor:pointer;border-radius:8px"
-        oninput="updateCompanyColor()"
+        oninput="renderPreview()"
       >
     </div>
 
@@ -254,30 +251,6 @@ function escapeHtml(str){
     .replace(/'/g, "&#39;");
 }
 
-function formatAddress(address){
-  const value = String(address || "").trim().replace(/\s+/g, " ");
-  if(!value) return "";
-
-  const commaIndex = value.indexOf(",");
-  if(commaIndex !== -1){
-    const first = value.slice(0, commaIndex).trim();
-    const rest = value.slice(commaIndex + 1).trim();
-    if(first && rest){
-      return `${escapeHtml(first)}<br>${escapeHtml(rest)}`;
-    }
-  }
-
-  const words = value.split(" ");
-  if(words.length <= 3){
-    return escapeHtml(value);
-  }
-
-  const mid = Math.ceil(words.length / 2);
-  const line1 = words.slice(0, mid).join(" ");
-  const line2 = words.slice(mid).join(" ");
-  return `${escapeHtml(line1)}<br>${escapeHtml(line2)}`;
-}
-
 function setPreviewMode(mode){
   currentMode = mode;
 
@@ -294,18 +267,6 @@ function setPreviewMode(mode){
   renderPreview();
 }
 
-/* company */
-function selectCompany(){
-  const val = document.getElementById("companySelect").value;
-  document.getElementById("pcompany") && (document.getElementById("pcompany").innerText = val);
-  renderPreview();
-}
-
-function updateCompanyColor(){
-  renderPreview();
-}
-
-/* inputs */
 const inputs = [
   "name","title","phone","email","address",
   "linkedin","facebook","instagram","youtube"
@@ -315,15 +276,14 @@ inputs.forEach(id => {
   document.getElementById(id).addEventListener("input", renderPreview);
 });
 
-/* build signature HTML */
 function buildSignatureHTML(){
   const name = escapeHtml(document.getElementById("name").value);
   const title = escapeHtml(document.getElementById("title").value);
   const company = escapeHtml(document.getElementById("companySelect").value);
-  const companyColor = document.getElementById("companyColor").value || "#dc2626";
+  const companyColor = document.getElementById("companyColor").value;
   const phone = escapeHtml(document.getElementById("phone").value);
   const email = escapeHtml(document.getElementById("email").value);
-  const address = formatAddress(document.getElementById("address").value);
+  const address = escapeHtml(document.getElementById("address").value);
 
   const linkedin = document.getElementById("linkedin").value.trim();
   const facebook = document.getElementById("facebook").value.trim();
@@ -353,7 +313,7 @@ function buildSignatureHTML(){
   }
 
   const socialRow = `
-    <table cellpadding="0" cellspacing="0" border="0" class="social-table" style="margin:8px auto 0;border-collapse:collapse;">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 0;border-collapse:collapse;">
       <tr>
         ${iconCell("https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg", linkedin, "LinkedIn")}
         ${iconCell("https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png", facebook, "Facebook")}
@@ -362,9 +322,32 @@ function buildSignatureHTML(){
       </tr>
     </table>`;
 
-  const phoneHtml = phone ? `<div><strong>Mobile:</strong> ${phone}</div>` : "";
-  const emailHtml = email ? `<div><strong>Email:</strong> ${email}</div>` : "";
-  const addressHtml = address ? `<div style="margin-top:6px;line-height:1.35;max-width:260px;"><strong>Address:</strong><br>${address}</div>` : "";
+  const phoneHtml = phone
+    ? `
+      <div>
+        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Mobile:</strong>
+        <span style="font-family:Verdana, sans-serif;font-style:italic;">${phone}</span>
+      </div>
+    `
+    : "";
+
+  const emailHtml = email
+    ? `
+      <div>
+        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Email:</strong>
+        <span style="font-family:Verdana, sans-serif;font-style:italic;">${email}</span>
+      </div>
+    `
+    : "";
+
+  const addressHtml = address
+    ? `
+      <div style="margin-top:6px;">
+        <strong style="font-family:'Arial Rounded MT Bold', Arial, sans-serif;font-style:normal;">Address:</strong>
+        <span style="font-family:Verdana, sans-serif;font-style:italic;">${address}</span>
+      </div>
+    `
+    : "";
 
   return `
     <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${bgColor};color:${textColor};font-family:'Arial Rounded MT Bold', Arial, sans-serif;">
@@ -389,11 +372,9 @@ function buildSignatureHTML(){
 }
 
 function renderPreview(){
-  const preview = document.getElementById("signature-preview");
-  preview.innerHTML = buildSignatureHTML();
+  document.getElementById("signature-preview").innerHTML = buildSignatureHTML();
 }
 
-/* logo upload */
 document.getElementById("logoUpload").addEventListener("change", function(){
   const file = this.files[0];
   if(!file) return;
@@ -406,13 +387,15 @@ document.getElementById("logoUpload").addEventListener("change", function(){
   reader.readAsDataURL(file);
 });
 
-/* copy signature */
 async function copySignature(){
   const html = buildSignatureHTML();
 
   try{
     const blob = new Blob([html], { type:"text/html" });
-    const textBlob = new Blob([html.replace(/<br>/g, "\n").replace(/<[^>]*>/g, "")], { type:"text/plain" });
+    const textBlob = new Blob(
+      [html.replace(/<br>/g, "\n").replace(/<[^>]*>/g, "")],
+      { type:"text/plain" }
+    );
 
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -429,6 +412,7 @@ async function copySignature(){
 
     const range = document.createRange();
     range.selectNode(temp);
+
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
