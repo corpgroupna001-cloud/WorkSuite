@@ -21,7 +21,6 @@ body{
   padding:40px;
 }
 
-/* layout */
 .container{
   width:100%;
   max-width:1200px;
@@ -30,7 +29,6 @@ body{
   gap:35px;
 }
 
-/* glass card */
 .glass{
   background:rgba(255,255,255,0.15);
   backdrop-filter:blur(20px);
@@ -45,7 +43,6 @@ h2{
   margin-bottom:18px;
 }
 
-/* inputs */
 input,
 select{
   width:100%;
@@ -73,7 +70,6 @@ select option{
   color:white;
 }
 
-/* button */
 button{
   width:100%;
   padding:12px;
@@ -91,7 +87,7 @@ button:hover{
   box-shadow:0 10px 20px rgba(0,0,0,0.25);
 }
 
-/* mode toggle */
+/* mode buttons */
 .mode-switch{
   display:flex;
   gap:10px;
@@ -110,100 +106,69 @@ button:hover{
   color:#6d28d9;
 }
 
-/* preview base */
-.preview{
+/* preview container */
+.preview-shell{
   border-radius:12px;
   padding:20px;
-  transition:0.3s ease;
+  transition:0.25s ease;
 }
 
-/* light preview */
-.preview.light{
+.preview-shell.light{
   background:white;
-  color:#111;
 }
 
-.preview.light #ptitle{
-  color:#4b5563;
-}
-
-.preview.light #pphone,
-.preview.light #pemail,
-.preview.light #paddress{
-  color:#111;
-}
-
-.preview.light td.divider{
-  border-left:2px solid #e5e7eb;
-}
-
-.preview.light .social-icon{
-  background:#fff;
-}
-
-/* dark preview */
-.preview.dark{
+.preview-shell.dark{
   background:#111827;
-  color:#f3f4f6;
 }
 
-.preview.dark #ptitle{
-  color:#d1d5db;
-}
-
-.preview.dark #pphone,
-.preview.dark #pemail,
-.preview.dark #paddress{
-  color:#f3f4f6;
-}
-
-.preview.dark td.divider{
-  border-left:2px solid #374151;
-}
-
-.preview.dark .social-icon{
-  background:#1f2937;
-}
-
-/* signature font */
 #signature-preview,
 #signature-preview *{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif !important;
 }
 
-/* social icons */
-.social-row{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  margin-top:8px;
-  flex-wrap:nowrap;
+/* Outlook-friendly social icons table */
+.social-table{
+  margin:8px auto 0;
+  border-collapse:collapse;
 }
 
-.social-row a{
+.social-table td{
+  padding:0 5px 0 0;
+  vertical-align:middle;
+}
+
+.social-table td:last-child{
+  padding-right:0;
+}
+
+.social-link{
+  display:inline-block;
+  line-height:0;
   text-decoration:none !important;
   border:none !important;
-  display:inline-flex;
-  line-height:0;
 }
 
 .social-icon{
-  width:38px;
-  height:38px;
+  width:30px;
+  height:30px;
+  display:block;
   border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   overflow:hidden;
-  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  background:#fff;
+}
+
+.preview-shell.dark .social-icon{
+  background:#1f2937;
 }
 
 .social-icon img{
-  width:26px;
-  height:26px;
-  object-fit:contain;
+  width:24px;
+  height:24px;
   display:block;
+  border:0;
+  outline:none;
+  margin:3px;
+  object-fit:contain;
 }
 
 @media(max-width:900px){
@@ -269,81 +234,75 @@ button:hover{
       <button type="button" id="darkBtn" onclick="setPreviewMode('dark')">Dark Mode</button>
     </div>
 
-    <div id="signature-preview" class="preview light">
-      <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-        <tr>
-          <td style="padding-right:18px;vertical-align:top;text-align:center;">
-            <img id="logoPreview" style="width:120px;display:none;margin-bottom:8px" alt="Logo">
-
-            <div class="social-row">
-              <a id="linkedinLink" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <div class="social-icon">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg" alt="LinkedIn">
-                </div>
-              </a>
-
-              <a id="facebookLink" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <div class="social-icon">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png" alt="Facebook">
-                </div>
-              </a>
-
-              <a id="instagramLink" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <div class="social-icon">
-                  <img src="https://toppng.com/uploads/preview/instagram-logo-circle-11549679754rhbcorxntv.png" alt="Instagram">
-                </div>
-              </a>
-
-              <a id="youtubeLink" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <div class="social-icon">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/YouTube_social_red_circle_%282017%29.svg/960px-YouTube_social_red_circle_%282017%29.svg.png" alt="YouTube">
-                </div>
-              </a>
-            </div>
-          </td>
-
-          <td class="divider" style="padding-left:18px;vertical-align:top;">
-            <div style="font-size:14px;line-height:1.6;">
-              <div id="pname" style="font-size:20px;font-weight:700"></div>
-              <div id="ptitle"></div>
-              <div id="pcompany" style="font-weight:700;margin-bottom:8px"></div>
-              <div id="pphone"></div>
-              <div id="pemail"></div>
-              <div id="paddress" style="margin-top:6px"></div>
-            </div>
-          </td>
-        </tr>
-      </table>
+    <div id="previewShell" class="preview-shell light">
+      <div id="signature-preview"></div>
     </div>
   </div>
+
 </div>
 
 <script>
 let currentMode = "light";
+let logoDataUrl = "";
+
+function escapeHtml(str){
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatAddress(address){
+  const value = String(address || "").trim().replace(/\s+/g, " ");
+  if(!value) return "";
+
+  const commaIndex = value.indexOf(",");
+  if(commaIndex !== -1){
+    const first = value.slice(0, commaIndex).trim();
+    const rest = value.slice(commaIndex + 1).trim();
+    if(first && rest){
+      return `${escapeHtml(first)}<br>${escapeHtml(rest)}`;
+    }
+  }
+
+  const words = value.split(" ");
+  if(words.length <= 3){
+    return escapeHtml(value);
+  }
+
+  const mid = Math.ceil(words.length / 2);
+  const line1 = words.slice(0, mid).join(" ");
+  const line2 = words.slice(mid).join(" ");
+  return `${escapeHtml(line1)}<br>${escapeHtml(line2)}`;
+}
 
 function setPreviewMode(mode){
   currentMode = mode;
 
-  const preview = document.getElementById("signature-preview");
+  const shell = document.getElementById("previewShell");
   const lightBtn = document.getElementById("lightBtn");
   const darkBtn = document.getElementById("darkBtn");
 
-  preview.classList.remove("light", "dark");
-  preview.classList.add(mode);
+  shell.classList.remove("light", "dark");
+  shell.classList.add(mode);
 
   lightBtn.classList.toggle("active", mode === "light");
   darkBtn.classList.toggle("active", mode === "dark");
+
+  renderPreview();
 }
 
 /* company */
 function selectCompany(){
   const val = document.getElementById("companySelect").value;
-  document.getElementById("pcompany").innerText = val;
+  document.getElementById("pcompany") && (document.getElementById("pcompany").innerText = val);
+  renderPreview();
 }
 
 function updateCompanyColor(){
-  const color = document.getElementById("companyColor").value;
-  document.getElementById("pcompany").style.color = color;
+  renderPreview();
 }
 
 /* inputs */
@@ -353,41 +312,85 @@ const inputs = [
 ];
 
 inputs.forEach(id => {
-  document.getElementById(id).addEventListener("input", updatePreview);
+  document.getElementById(id).addEventListener("input", renderPreview);
 });
 
-/* preview update */
-function updatePreview(){
-  const name = document.getElementById("name").value;
-  const title = document.getElementById("title").value;
-  const phone = document.getElementById("phone").value;
-  const email = document.getElementById("email").value;
-  const address = document.getElementById("address").value;
+/* build signature HTML */
+function buildSignatureHTML(){
+  const name = escapeHtml(document.getElementById("name").value);
+  const title = escapeHtml(document.getElementById("title").value);
+  const company = escapeHtml(document.getElementById("companySelect").value);
+  const companyColor = document.getElementById("companyColor").value || "#dc2626";
+  const phone = escapeHtml(document.getElementById("phone").value);
+  const email = escapeHtml(document.getElementById("email").value);
+  const address = formatAddress(document.getElementById("address").value);
 
-  document.getElementById("pname").innerText = name;
-  document.getElementById("ptitle").innerText = title;
+  const linkedin = document.getElementById("linkedin").value.trim();
+  const facebook = document.getElementById("facebook").value.trim();
+  const instagram = document.getElementById("instagram").value.trim();
+  const youtube = document.getElementById("youtube").value.trim();
 
-  document.getElementById("pphone").innerHTML = phone ? "<strong>Mobile:</strong> " + phone : "";
-  document.getElementById("pemail").innerHTML = email ? "<strong>Email:</strong> " + email : "";
-  document.getElementById("paddress").innerHTML = address ? "<strong>Address:</strong> " + address : "";
+  const textColor = currentMode === "dark" ? "#f3f4f6" : "#111111";
+  const secondaryColor = currentMode === "dark" ? "#d1d5db" : "#4b5563";
+  const borderColor = currentMode === "dark" ? "#374151" : "#e5e7eb";
+  const bgColor = currentMode === "dark" ? "#111827" : "#ffffff";
+  const iconBg = currentMode === "dark" ? "#1f2937" : "#ffffff";
 
-  updateSocial();
+  const logoHtml = logoDataUrl
+    ? `<img src="${logoDataUrl}" alt="Logo" style="width:120px;display:block;margin:0 auto 8px;border:0;outline:none;">`
+    : "";
+
+  function iconCell(src, href, alt){
+    if(!href) return "";
+    return `
+      <td style="padding-right:6px;vertical-align:middle;">
+        <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;line-height:0;text-decoration:none;border:none;">
+          <span style="width:30px;height:30px;display:block;border-radius:50%;overflow:hidden;background:${iconBg};">
+            <img src="${src}" alt="${alt}" width="24" height="24" style="width:24px;height:24px;display:block;border:0;outline:none;margin:3px;object-fit:contain;">
+          </span>
+        </a>
+      </td>`;
+  }
+
+  const socialRow = `
+    <table cellpadding="0" cellspacing="0" border="0" class="social-table" style="margin:8px auto 0;border-collapse:collapse;">
+      <tr>
+        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg", linkedin, "LinkedIn")}
+        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Facebook_f_logo_%282019%29.svg/960px-Facebook_f_logo_%282019%29.svg.png", facebook, "Facebook")}
+        ${iconCell("https://toppng.com/uploads/preview/instagram-logo-circle-11549679754rhbcorxntv.png", instagram, "Instagram")}
+        ${iconCell("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/YouTube_social_red_circle_%282017%29.svg/960px-YouTube_social_red_circle_%282017%29.svg.png", youtube, "YouTube")}
+      </tr>
+    </table>`;
+
+  const phoneHtml = phone ? `<div><strong>Mobile:</strong> ${phone}</div>` : "";
+  const emailHtml = email ? `<div><strong>Email:</strong> ${email}</div>` : "";
+  const addressHtml = address ? `<div style="margin-top:6px;line-height:1.35;max-width:260px;"><strong>Address:</strong><br>${address}</div>` : "";
+
+  return `
+    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${bgColor};color:${textColor};font-family:'Arial Rounded MT Bold', Arial, sans-serif;">
+      <tr>
+        <td style="padding-right:18px;vertical-align:top;text-align:center;">
+          ${logoHtml}
+          ${socialRow}
+        </td>
+        <td style="border-left:2px solid ${borderColor};padding-left:18px;vertical-align:top;">
+          <div style="font-size:20px;font-weight:700;line-height:1.2;color:${textColor};">${name}</div>
+          <div style="font-size:14px;line-height:1.5;color:${secondaryColor};">${title}</div>
+          <div style="font-size:14px;line-height:1.5;color:${companyColor};font-weight:700;margin-bottom:8px;">${company}</div>
+          <div style="font-size:14px;line-height:1.6;color:${textColor};">
+            ${phoneHtml}
+            ${emailHtml}
+            ${addressHtml}
+          </div>
+        </td>
+      </tr>
+    </table>
+  `;
 }
 
-/* social */
-function updateSocial(){
-  ["linkedin","facebook","instagram","youtube"].forEach(id => {
-    const value = document.getElementById(id).value;
-    const link = document.getElementById(id + "Link");
-
-    if(value){
-      link.href = value;
-      link.style.display = "inline-flex";
-    }else{
-      link.style.display = "none";
-      link.removeAttribute("href");
-    }
-  });
+function renderPreview(){
+  const preview = document.getElementById("signature-preview");
+  preview.innerHTML = buildSignatureHTML();
 }
 
 /* logo upload */
@@ -397,39 +400,49 @@ document.getElementById("logoUpload").addEventListener("change", function(){
 
   const reader = new FileReader();
   reader.onload = function(e){
-    const img = document.getElementById("logoPreview");
-    img.src = e.target.result;
-    img.style.display = "block";
+    logoDataUrl = e.target.result;
+    renderPreview();
   };
   reader.readAsDataURL(file);
 });
 
 /* copy signature */
 async function copySignature(){
-  const el = document.getElementById("signature-preview");
+  const html = buildSignatureHTML();
 
   try{
-    const html = el.outerHTML;
     const blob = new Blob([html], { type:"text/html" });
-    const data = [new ClipboardItem({ "text/html": blob })];
-    await navigator.clipboard.write(data);
+    const textBlob = new Blob([html.replace(/<br>/g, "\n").replace(/<[^>]*>/g, "")], { type:"text/plain" });
+
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": blob,
+        "text/plain": textBlob
+      })
+    ]);
+
     alert("Signature copied. Paste into Outlook signature editor.");
   }catch(err){
-    const range = document.createRange();
-    range.selectNode(el);
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    document.body.appendChild(temp);
 
+    const range = document.createRange();
+    range.selectNode(temp);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
 
     document.execCommand("copy");
+
     sel.removeAllRanges();
+    document.body.removeChild(temp);
 
     alert("Signature copied. Paste into Outlook signature editor.");
   }
 }
 
-updatePreview();
+renderPreview();
 setPreviewMode("light");
 </script>
 
