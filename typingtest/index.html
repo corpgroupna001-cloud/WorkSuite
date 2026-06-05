@@ -510,7 +510,7 @@
         </div>
         <div>
           <div class="modal-title">ZenType <span>AI</span></div>
-          <div class="modal-sub">Adaptive typing test powered by<br>Gemini 2.5 Flash-Lite</div>
+          <div class="modal-sub">Adaptive typing test powered by<br>Groq AI</div>
         </div>
       </div>
 
@@ -526,7 +526,7 @@
 
       <div class="info-box" style="margin-bottom: 24px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <p>After each 2-minute test, Gemini analyses your WPM and accuracy to generate a custom passage — harder or easier — to push your performance forward.</p>
+        <p>After each 2-minute test, Groq AI analyzes your WPM and accuracy to generate a custom paragraph — harder or easier — to push your performance forward.</p>
       </div>
 
       <button class="btn-primary" onclick="saveName()">
@@ -574,7 +574,7 @@
       <div id="ai-feedback">
         <div class="ai-fb-header">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
-          Gemini Coaching Tip
+          Groq Coaching Tip
         </div>
         <div id="ai-fb-text"></div>
       </div>
@@ -701,14 +701,12 @@
   <script>
     /* ── Config ──────────────────────────────────────────── */
     const TEST_DURATION  = 120;
-    const GEMINI_MODEL   = 'gemini-2.5-flash-lite';
-    const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+    const GROQ_MODEL = 'llama-3.3-70b-versatile';
+    const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
 
     // Inject your API key here or via server-side templating.
-    // Example: const GEMINI_API_KEY = '{{GEMINI_API_KEY}}';
-    const GEMINI_API_KEY = 'process.env.GEMINI_API_KEY';
-
-    const DEFAULT_PASSAGE = "The journey of a thousand miles begins with a single step. Success is not measured by the money you earn, but by the difference you make in the lives of others. Believe in yourself and you are already halfway there. It does not matter how slowly you go, as long as you keep moving forward. Everything you have ever wanted lies just beyond the boundary of your comfort zone. Hardship often prepares ordinary people for extraordinary destinations. Dream with ambition and act with courage. Quality is never an accident; it is always the result of sincere effort. The only way to produce great work is to love what you do. If you can imagine it clearly, you can build it deliberately.";
+    // Example: const GROQ_API_KEY = '{{GROQ_API_KEY}}';
+    const GROQ_API_KEY = 'process.env.GROQ_API_KEY';
 
     /* ── State ───────────────────────────────────────────── */
     let employeeName       = '';
@@ -761,7 +759,7 @@
     }
 
     /* ── Name save ───────────────────────────────────────── */
-    function saveName() {
+    async function saveName() {
       const v = nameInput.value.trim();
       if (v.length < 2) {
         nameInput.classList.add('error');
@@ -771,19 +769,28 @@
       employeeName = v;
       document.getElementById('header-employee').textContent = employeeName;
       nameModal.classList.add('hidden');
-      initTest();
+      await initTest();
     }
 
     nameInput.addEventListener('keypress', e => { if (e.key === 'Enter') saveName(); });
 
-    /* ── Gemini ──────────────────────────────────────────── */
-    async function callGemini(prompt) {
-      const res = await fetch(GEMINI_URL, {
+    /* ── Groq AI ─────────────────────────────────────────── */
+    async function callGroq(prompt) {
+      const res = await fetch(GROQ_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: 420, topP: 0.95 }
+          model: GROQ_MODEL,
+          messages: [
+            { role: 'system', content: 'You are a concise typing-test paragraph generator.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.85,
+          max_tokens: 420,
+          top_p: 0.95
         })
       });
       if (!res.ok) {
@@ -791,7 +798,7 @@
         throw new Error(err?.error?.message || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      return data?.choices?.[0]?.message?.content?.trim() || '';
     }
 
     function buildPassagePrompt(stats, history) {
@@ -808,7 +815,7 @@
         ? `Previous ${history.length} attempt(s): ${history.map(h => `WPM ${h.wpm} / Acc ${h.accuracy}%`).join(' → ')}.`
         : '';
 
-      return `You are a typing test passage generator. Create one single passage for a 2-minute typing test.
+      return `You are a typing test passage generator. Create one single paragraph for a 2-minute typing test.
 
 Employee performance:
 - WPM: ${wpm}  |  Accuracy: ${accuracy}%  |  Errors: ${stats.errors}
@@ -820,9 +827,36 @@ Requirements:
 - Length: 200–240 words
 - Topic: motivational, professional, or nature-themed — no code or jargon
 - Do NOT include any title, label, or commentary
-- Output the passage text ONLY
+- Output the paragraph text ONLY
 
 Generate now:`;
+    }
+
+    async function generateInitialPassage() {
+      document.getElementById('passage-label').textContent = 'Generating Groq paragraph...';
+      textContainer.textContent = 'Generating your first paragraph with Groq AI...';
+      focusOverlay.classList.remove('hidden');
+      document.getElementById('focus-cta').textContent = 'Generating paragraph...';
+      document.getElementById('focus-hint').textContent = 'Please wait for Groq AI';
+
+      const passageText = await callGroq(`Create one single paragraph for a 2-minute typing test.
+
+Requirements:
+- Length: 200–240 words
+- Difficulty: Standard
+- Topic: motivational, professional, or nature-themed
+- No code, no title, no labels, no bullet points, no commentary
+- Output the paragraph text ONLY`);
+
+      const cleaned = passageText.replace(/^[^\s].*?:\s*/m, '').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+      if (!cleaned) throw new Error('Groq returned an empty paragraph.');
+
+      nextPassageReady = {
+        text: cleaned,
+        difficulty: 'Standard',
+        insight: ''
+      };
     }
 
     async function generateNextPassage(stats) {
@@ -831,14 +865,16 @@ Generate now:`;
 
       try {
         const [passageText, insight] = await Promise.all([
-          callGemini(buildPassagePrompt(stats, performanceHistory)),
-          callGemini(`Give one concise coaching tip (max 18 words) for a typist with WPM: ${stats.wpm}, Accuracy: ${stats.accuracy}%. Be specific and actionable.`)
+          callGroq(buildPassagePrompt(stats, performanceHistory)),
+          callGroq(`Give one concise coaching tip (max 18 words) for a typist with WPM: ${stats.wpm}, Accuracy: ${stats.accuracy}%. Be specific and actionable.`)
         ]);
 
         const cleaned = passageText.replace(/^[^\s].*?:\s*/m, '').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
 
+        if (!cleaned) throw new Error('Groq returned an empty paragraph.');
+
         nextPassageReady = {
-          text:       cleaned || DEFAULT_PASSAGE,
+          text:       cleaned,
           difficulty: getDifficulty(stats.wpm, stats.accuracy),
           insight:    insight || ''
         };
@@ -853,10 +889,10 @@ Generate now:`;
         retakeBtn.disabled = false;
 
       } catch (err) {
-        console.error('Gemini error:', err);
-        nextPassageReady = { text: DEFAULT_PASSAGE, difficulty: 'Standard', insight: '' };
+        console.error('Groq error:', err);
+        nextPassageReady = null;
         setNextStatus('error', err.message || 'Check your API key');
-        retakeBtn.disabled = false;
+        retakeBtn.disabled = true;
       }
     }
 
@@ -884,7 +920,7 @@ Generate now:`;
         sub.textContent   = 'Click "Start Next Test" to continue';
       } else {
         warn.style.display  = '';
-        label.textContent   = 'Could not reach Gemini — using default passage';
+        label.textContent   = 'Could not reach Groq AI — no paragraph generated';
         sub.textContent     = detail;
       }
     }
@@ -922,24 +958,32 @@ Generate now:`;
     }
 
     /* ── Init test ───────────────────────────────────────── */
-    function initTest() {
+    async function initTest() {
       attemptCount++;
 
       const badge = document.getElementById('attempt-badge');
       badge.style.display = '';
       document.getElementById('attempt-num').textContent = attemptCount;
 
-      if (nextPassageReady?.text) {
-        currentPassage = nextPassageReady.text;
-        isAiPassage    = true;
-        setDifficultyBadge(nextPassageReady.difficulty);
-        document.getElementById('passage-label').textContent = 'AI Passage · ' + nextPassageReady.difficulty;
-      } else {
-        currentPassage = DEFAULT_PASSAGE;
-        isAiPassage    = false;
+      try {
+        if (!nextPassageReady?.text) {
+          await generateInitialPassage();
+        }
+      } catch (err) {
+        console.error('Groq initial paragraph error:', err);
+        attemptCount--;
+        textContainer.textContent = 'Could not generate a paragraph from Groq AI. Check your API key and try again.';
+        document.getElementById('passage-label').textContent = 'Groq generation failed';
         setDifficultyBadge('Standard');
-        document.getElementById('passage-label').textContent = 'Standard Passage';
+        document.getElementById('focus-cta').textContent = 'Generation failed';
+        document.getElementById('focus-hint').textContent = err.message || 'Check your Groq API key';
+        return;
       }
+
+      currentPassage = nextPassageReady.text;
+      isAiPassage    = true;
+      setDifficultyBadge(nextPassageReady.difficulty);
+      document.getElementById('passage-label').textContent = 'AI Paragraph · ' + nextPassageReady.difficulty;
 
       nextPassageReady = null;
       renderPassage(currentPassage);
@@ -954,6 +998,8 @@ Generate now:`;
       resultsModal.classList.add('hidden');
       focusOverlay.classList.remove('hidden');
       focusOverlay.style.opacity = '1';
+      document.getElementById('focus-cta').textContent = 'Click here to start';
+      document.getElementById('focus-hint').textContent = '2-minute adaptive test · Press any key to begin';
     }
 
     /* ── Start / End ─────────────────────────────────────── */
@@ -1080,9 +1126,9 @@ Generate now:`;
     }
 
     /* ── Reset ───────────────────────────────────────────── */
-    function resetTest() {
+    async function resetTest() {
       clearInterval(interval);
-      initTest();
+      await initTest();
       typingInput.focus();
     }
 
