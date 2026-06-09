@@ -10,31 +10,24 @@
 <body>
 <nav class="nav"><div class="wrap navin">
   <a class="logo" href="../"><span class="mark">⏱</span><span>FocusFlow</span></a>
-  <div class="links">
-    <a href="../">Home</a><a href="../typingtest/">ZenType</a><a href="../NotePad/">Notes</a>
+  <div class="links"><a href="../">Home</a><a href="../typingtest/">Typing</a>
+    <button class="btn sm ghost" onclick="_openCmd()" style="font-family:var(--mono)">⌘K</button>
     <button class="theme-toggle" data-theme-toggle>🌙</button>
   </div>
 </div></nav>
-
 <main class="wrap section">
-  <section class="panel tool">
-    <span class="eyebrow">Pomodoro technique</span>
-    <h1 class="title">Deep work, clean breaks.</h1>
+  <section class="panel tool-page">
+    <span class="badge-eyebrow">Pomodoro technique</span>
+    <h1 class="section-title" style="margin-top:10px">Deep work, clean breaks.</h1>
     <div class="two">
       <div>
-        <div class="formgrid mb">
+        <div class="form-grid mb">
           <label>Work (min)<input type="number" id="workMin" value="25" min="1" max="120"></label>
           <label>Short break<input type="number" id="shortMin" value="5" min="1" max="30"></label>
           <label>Long break<input type="number" id="longMin" value="15" min="1" max="60"></label>
           <label>Sessions<input type="number" id="sessions" value="4" min="1" max="12"></label>
         </div>
-        <div class="ring" id="ring">
-          <div>
-            <div class="big" id="clock">25:00</div>
-            <div class="muted" id="modeLabel">Work</div>
-            <div class="tag" id="sessionLabel">Session 1 of 4</div>
-          </div>
-        </div>
+        <div class="ring" id="ring"><div><div class="big" id="clock">25:00</div><div style="color:var(--text-secondary);font-size:13px" id="modeLabel">Work</div><div class="card-tag" id="sessionLabel">Session 1 of 4</div></div></div>
         <div class="toolbar" style="justify-content:center">
           <button class="btn primary" id="start">Start</button>
           <button class="btn" id="pause">Pause</button>
@@ -43,119 +36,43 @@
         </div>
       </div>
       <div>
-        <div class="card mb">
-          <h3>Today</h3>
-          <div class="statgrid">
+        <div class="panel panel-pad mb">
+          <h3 style="font-size:15px;margin-bottom:8px">Today</h3>
+          <div class="stat-grid">
             <div class="stat"><b id="done">0</b><span>Work sessions</span></div>
             <div class="stat"><b id="cycle">0</b><span>Full cycles</span></div>
             <div class="stat"><b id="streak">0</b><span>Day streak</span></div>
             <div class="stat"><b id="totalMin">0</b><span>Focus minutes</span></div>
           </div>
         </div>
-        <div class="card">
-          <h3>Session log</h3>
-          <div id="log" style="max-height:200px;overflow:auto"></div>
-          <p class="mini mt">Sessions saved locally. A short audio chime plays at each transition.</p>
+        <div class="panel panel-pad">
+          <h3 style="font-size:15px;margin-bottom:8px">Session log</h3>
+          <div id="log" style="max-height:180px;overflow:auto;font-size:13px"></div>
         </div>
       </div>
     </div>
   </section>
 </main>
-
 <script>
-const $ = s => document.querySelector(s);
-let modes, idx = 0, left, total, timer = null;
-const today = new Date().toISOString().slice(0, 10);
-const dayKey = 'ff-' + today;
-const streakKey = 'ff-streak';
-const logKey = 'ff-log-' + today;
-
-function buildModes() {
-  const w = +$('#workMin').value * 60;
-  const s = +$('#shortMin').value * 60;
-  const l = +$('#longMin').value * 60;
-  const n = +$('#sessions').value;
-  const arr = [];
-  for (let i = 0; i < n; i++) {
-    arr.push(['Work', w]);
-    arr.push(i < n - 1 ? ['Short break', s] : ['Long break', l]);
-  }
-  return arr;
-}
-
-function saved() { return +(localStorage.getItem(dayKey) || 0); }
-function savedMin() { return +(localStorage.getItem(dayKey + '-min') || 0); }
-function logs() { return JSON.parse(localStorage.getItem(logKey) || '[]'); }
-
-function calcStreak() {
-  let streak = 0, d = new Date();
-  while (true) {
-    const k = 'ff-' + d.toISOString().slice(0, 10);
-    if (+(localStorage.getItem(k) || 0) > 0) { streak++; d.setDate(d.getDate() - 1); }
-    else break;
-  }
-  return streak;
-}
-
-function sound() {
-  try {
-    const ctx = new (AudioContext || webkitAudioContext)();
-    const g = ctx.createGain(); g.gain.value = .06; g.connect(ctx.destination);
-    [660, 880, 660].forEach((f, i) => {
-      const o = ctx.createOscillator(); o.frequency.value = f;
-      o.connect(g); o.start(ctx.currentTime + i * .18); o.stop(ctx.currentTime + i * .18 + .14);
-    });
-  } catch (e) {}
-}
-
-function fmt(n) { return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
-
-function draw() {
-  const m = modes[idx];
-  $('#clock').textContent = fmt(left);
-  $('#modeLabel').textContent = m[0];
-  const sess = Math.floor(idx / 2) + 1;
-  const totalSess = +$('#sessions').value;
-  $('#sessionLabel').textContent = 'Session ' + sess + ' of ' + totalSess;
-  $('#ring').style.setProperty('--p', ((total - left) / total * 100) + '%');
-  $('#done').textContent = saved();
-  $('#cycle').textContent = Math.floor(saved() / (+$('#sessions').value));
-  $('#streak').textContent = calcStreak();
-  $('#totalMin').textContent = savedMin();
-  const lg = logs();
-  $('#log').innerHTML = lg.length ? lg.map(l => `<div class="mini" style="padding:4px 0;border-bottom:1px solid var(--border)">${l}</div>`).join('') : '<p class="muted">No sessions yet today.</p>';
-}
-
-function complete() {
-  if (modes[idx][0] === 'Work') {
-    localStorage.setItem(dayKey, saved() + 1);
-    localStorage.setItem(dayKey + '-min', savedMin() + Math.round(modes[idx][1] / 60));
-    const lg = logs();
-    lg.push(new Date().toLocaleTimeString() + ' — ' + Math.round(modes[idx][1] / 60) + ' min focus completed');
-    localStorage.setItem(logKey, JSON.stringify(lg));
-  }
-  sound();
-  idx = (idx + 1) % modes.length;
-  left = total = modes[idx][1];
-  draw();
-}
-
-function tick() { left--; if (left <= 0) complete(); draw(); }
-
-function init() {
-  clearInterval(timer); timer = null;
-  modes = buildModes();
-  idx = 0; left = total = modes[0][1];
-  draw();
-}
-
-$('#start').onclick = () => { if (!timer) timer = setInterval(tick, 1000); };
-$('#pause').onclick = () => { clearInterval(timer); timer = null; };
-$('#skip').onclick = complete;
-$('#reset').onclick = init;
-['workMin', 'shortMin', 'longMin', 'sessions'].forEach(id =>
-  $('#' + id).addEventListener('change', () => { if (!timer) init(); })
-);
+const $=s=>document.querySelector(s);
+let modes,idx=0,left,total,timer=null;
+const today=new Date().toISOString().slice(0,10),dayKey='ff-'+today,logKey='ff-log-'+today;
+function buildModes(){const w=+$('#workMin').value*60,s=+$('#shortMin').value*60,l=+$('#longMin').value*60,n=+$('#sessions').value,arr=[];for(let i=0;i<n;i++){arr.push(['Work',w]);arr.push(i<n-1?['Short break',s]:['Long break',l])}return arr}
+function saved(){return+(localStorage.getItem(dayKey)||0)}
+function savedMin(){return+(localStorage.getItem(dayKey+'-min')||0)}
+function logs(){return JSON.parse(localStorage.getItem(logKey)||'[]')}
+function calcStreak(){let streak=0,d=new Date();while(true){const k='ff-'+d.toISOString().slice(0,10);if(+(localStorage.getItem(k)||0)>0){streak++;d.setDate(d.getDate()-1)}else break}return streak}
+function sound(){try{const ctx=new(AudioContext||webkitAudioContext)(),g=ctx.createGain();g.gain.value=.05;g.connect(ctx.destination);[660,880,660].forEach((f,i)=>{const o=ctx.createOscillator();o.frequency.value=f;o.connect(g);o.start(ctx.currentTime+i*.18);o.stop(ctx.currentTime+i*.18+.12)})}catch(e){}}
+function fmt(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
+function draw(){const m=modes[idx];$('#clock').textContent=fmt(left);$('#modeLabel').textContent=m[0];$('#sessionLabel').textContent='Session '+(Math.floor(idx/2)+1)+' of '+$('#sessions').value;$('#ring').style.setProperty('--p',((total-left)/total*100)+'%');$('#done').textContent=saved();$('#cycle').textContent=Math.floor(saved()/(+$('#sessions').value));$('#streak').textContent=calcStreak();$('#totalMin').textContent=savedMin();const lg=logs();$('#log').innerHTML=lg.length?lg.map(l=>`<div style="padding:5px 0;border-bottom:1px solid var(--border);color:var(--text-secondary)">${l}</div>`).join(''):'<p style="color:var(--text-tertiary)">No sessions yet today.</p>'}
+function complete(){if(modes[idx][0]==='Work'){localStorage.setItem(dayKey,saved()+1);localStorage.setItem(dayKey+'-min',savedMin()+Math.round(modes[idx][1]/60));const lg=logs();lg.push(new Date().toLocaleTimeString()+' — '+Math.round(modes[idx][1]/60)+' min focus');localStorage.setItem(logKey,JSON.stringify(lg))}sound();idx=(idx+1)%modes.length;left=total=modes[idx][1];draw()}
+function tick(){left--;if(left<=0)complete();draw()}
+function init(){clearInterval(timer);timer=null;modes=buildModes();idx=0;left=total=modes[0][1];draw()}
+$('#start').onclick=()=>{if(!timer)timer=setInterval(tick,1000)};
+$('#pause').onclick=()=>{clearInterval(timer);timer=null};
+$('#skip').onclick=complete;
+$('#reset').onclick=init;
+['workMin','shortMin','longMin','sessions'].forEach(id=>$('#'+id).addEventListener('change',()=>{if(!timer)init()}));
 init();
 </script>
 </body>

@@ -1,120 +1,34 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Unit Converter — WorkSuite</title>
-  <link rel="stylesheet" href="../assets/styles.css">
-  <script src="../assets/app.js"></script>
+  <link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js"></script>
 </head>
 <body>
-<nav class="nav"><div class="wrap navin">
-  <a class="logo" href="../"><span class="mark">📐</span><span>Unit Converter</span></a>
-  <div class="links"><a href="../">Home</a><a href="../JsonFormat/">JSON</a>
-    <button class="theme-toggle" data-theme-toggle>🌙</button>
+<nav class="nav"><div class="wrap navin"><a class="logo" href="../"><span class="mark">📐</span><span>Unit Converter</span></a><div class="links"><a href="../">Home</a><button class="btn sm ghost" onclick="_openCmd()" style="font-family:var(--mono)">⌘K</button><button class="theme-toggle" data-theme-toggle>🌙</button></div></div></nav>
+<main class="wrap section"><section class="panel tool-page">
+  <h1 class="section-title">Unit converter</h1>
+  <p class="section-sub mb">Convert between length, weight, temperature, speed, data size and time.</p>
+  <label>Category<select id="cat"></select></label>
+  <div class="two mt">
+    <div><label>From<select id="from"></select></label><input type="number" id="val" value="1" step="any"></div>
+    <div><label>To<select id="to"></select></label><div class="output-box mt" id="result" style="font-size:22px;font-weight:800;display:grid;place-items:center;min-height:48px;cursor:pointer" title="Click to copy"></div></div>
   </div>
-</div></nav>
-
-<main class="wrap section">
-  <section class="panel tool">
-    <h1 class="title">Unit converter</h1>
-    <p class="muted mb">Convert between common units for length, weight, temperature, speed, data size and time.</p>
-
-    <label>Category<select id="cat"></select></label>
-
-    <div class="two mt">
-      <div>
-        <label>From<select id="from"></select></label>
-        <input type="number" id="val" value="1" step="any">
-      </div>
-      <div>
-        <label>To<select id="to"></select></label>
-        <div class="output-box mt" id="result" style="font-size:24px;font-weight:800;display:grid;place-items:center;min-height:52px;cursor:pointer" title="Click to copy"></div>
-      </div>
-    </div>
-
-    <button class="btn mt" id="swap" style="width:auto;margin:16px auto;display:block">⇄ Swap</button>
-
-    <h2 class="mt">Quick reference</h2>
-    <div id="ref" class="grid mt" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
-  </section>
-</main>
-
+  <button class="btn sm mt" id="swap" style="display:block;margin:14px auto">⇄ Swap</button>
+  <h2 style="font-size:16px;margin-top:20px">Quick reference</h2>
+  <div id="ref" class="grid mt" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
+</section></main>
 <script>
 const $=s=>document.querySelector(s);
-
-const units={
-  Length:{
-    mm:1,cm:10,m:1000,km:1e6,in:25.4,ft:304.8,yd:914.4,mi:1.609344e6
-  },
-  Weight:{
-    mg:1,g:1000,kg:1e6,oz:28349.5,lb:453592,ton:1e9
-  },
-  Temperature:{_special:true,units:['°C','°F','K']},
-  Speed:{
-    'm/s':1,'km/h':1/3.6,'mph':0.44704,'knots':0.514444,'ft/s':0.3048
-  },
-  'Data Size':{
-    B:1,KB:1024,MB:1048576,GB:1073741824,TB:1099511627776
-  },
-  Time:{
-    ms:1,s:1000,min:60000,hr:3600000,day:86400000,week:604800000
-  }
-};
-
-function tempConvert(val,from,to){
-  let c;
-  if(from==='°C')c=val;else if(from==='°F')c=(val-32)*5/9;else c=val-273.15;
-  if(to==='°C')return c;if(to==='°F')return c*9/5+32;return c+273.15;
-}
-
-let currentCat='Length';
-
-function populateCat(){
-  $('#cat').innerHTML=Object.keys(units).map(k=>`<option${k===currentCat?' selected':''}>${k}</option>`).join('');
-}
-
-function populateUnits(){
-  const cat=units[currentCat];
-  const list=cat._special?cat.units:Object.keys(cat);
-  $('#from').innerHTML=list.map((u,i)=>`<option${i===0?' selected':''}>${u}</option>`).join('');
-  $('#to').innerHTML=list.map((u,i)=>`<option${i===1?' selected':''}>${u}</option>`).join('');
-}
-
-function convert(){
-  const val=parseFloat($('#val').value)||0;
-  const from=$('#from').value,to=$('#to').value;
-  let result;
-  if(currentCat==='Temperature'){
-    result=tempConvert(val,from,to);
-  }else{
-    const cat=units[currentCat];
-    result=val*cat[from]/cat[to];
-  }
-  const formatted=Number.isInteger(result)?result:parseFloat(result.toPrecision(10));
-  $('#result').textContent=formatted+' '+to;
-}
-
-function renderRef(){
-  const cat=units[currentCat];
-  if(cat._special){$('#ref').innerHTML='';return}
-  const list=Object.keys(cat);
-  const base=list[0];
-  $('#ref').innerHTML=list.map(u=>{
-    const r=cat[base]/cat[u];
-    const v=parseFloat(r.toPrecision(6));
-    return`<div class="stat"><b>${v}</b><span>1 ${base} = ${v} ${u}</span></div>`;
-  }).join('');
-}
-
-$('#cat').onchange=()=>{currentCat=$('#cat').value;populateUnits();convert();renderRef()};
-$('#from').onchange=convert;
-$('#to').onchange=convert;
-$('#val').oninput=convert;
-$('#swap').onclick=()=>{const f=$('#from').value,t=$('#to').value;$('#from').value=t;$('#to').value=f;convert()};
-$('#result').onclick=()=>WorkSuite.copyText($('#result').textContent);
-
-populateCat();populateUnits();convert();renderRef();
+const units={Length:{mm:1,cm:10,m:1000,km:1e6,in:25.4,ft:304.8,yd:914.4,mi:1.609344e6},Weight:{mg:1,g:1000,kg:1e6,oz:28349.5,lb:453592,ton:1e9},Temperature:{_special:true,units:['°C','°F','K']},Speed:{'m/s':1,'km/h':1/3.6,'mph':0.44704,'knots':0.514444,'ft/s':0.3048},'Data Size':{B:1,KB:1024,MB:1048576,GB:1073741824,TB:1099511627776},Time:{ms:1,s:1000,min:60000,hr:3600000,day:86400000,week:604800000}};
+function tempConvert(v,f,t){let c;if(f==='°C')c=v;else if(f==='°F')c=(v-32)*5/9;else c=v-273.15;if(t==='°C')return c;if(t==='°F')return c*9/5+32;return c+273.15}
+let cat='Length';
+function popCat(){$('#cat').innerHTML=Object.keys(units).map(k=>`<option${k===cat?' selected':''}>${k}</option>`).join('')}
+function popUnits(){const c=units[cat],list=c._special?c.units:Object.keys(c);$('#from').innerHTML=list.map((u,i)=>`<option${i===0?' selected':''}>${u}</option>`).join('');$('#to').innerHTML=list.map((u,i)=>`<option${i===1?' selected':''}>${u}</option>`).join('')}
+function convert(){const v=parseFloat($('#val').value)||0,f=$('#from').value,t=$('#to').value;let r;if(cat==='Temperature')r=tempConvert(v,f,t);else{const c=units[cat];r=v*c[f]/c[t]}const fmt=Number.isInteger(r)?r:parseFloat(r.toPrecision(10));$('#result').textContent=fmt+' '+t}
+function renderRef(){const c=units[cat];if(c._special){$('#ref').innerHTML='';return}const list=Object.keys(c),base=list[0];$('#ref').innerHTML=list.map(u=>{const v=parseFloat((c[base]/c[u]).toPrecision(6));return`<div class="stat"><b>${v}</b><span>1 ${base} = ${v} ${u}</span></div>`}).join('')}
+$('#cat').onchange=()=>{cat=$('#cat').value;popUnits();convert();renderRef()};$('#from').onchange=convert;$('#to').onchange=convert;$('#val').oninput=convert;$('#swap').onclick=()=>{const f=$('#from').value,t=$('#to').value;$('#from').value=t;$('#to').value=f;convert()};$('#result').onclick=()=>WorkSuite.copyText($('#result').textContent);
+popCat();popUnits();convert();renderRef();
 </script>
-</body>
-</html>
+</body></html>

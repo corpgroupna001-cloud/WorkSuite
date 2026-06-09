@@ -1,40 +1,49 @@
-# WorkSuite
+# WorkSuite v3
 
-A suite of 12 fast, local-first browser tools for everyday productivity. No sign-ups, no tracking, no server dependencies.
+A premium suite of 12 fast, local-first browser tools. No sign-ups. No tracking. No server dependencies.
 
-## Tools
+## Flagship: ZenType Typing Test
+
+Premium typing test with **piano key sounds** via Web Audio API, character-by-character progress tracking, live WPM/accuracy metrics, polished results screen, keyboard heatmap, and performance history charts.
+
+## All Tools
 
 | Tool | Description |
 |------|-------------|
-| **FocusFlow** | Pomodoro timer with custom durations, progress ring, streaks and session log |
-| **ZenType** | Typing speed test with difficulty modes, charts and keyboard heatmap |
-| **Signature Studio** | Professional email signature generator with logo, socials and Outlook copy |
-| **QR Studio** | Real-time QR codes with custom colors, Wi-Fi and vCard modes |
-| **WordCount Pro** | Word, character, readability analysis with find/replace and case tools |
-| **Sports Taxonomy** | Browse, bookmark and compare sports training attributes |
-| **Password Generator** | Cryptographically random passwords with strength meter and history |
-| **JSON Formatter** | Validate, format, minify JSON with stats and download |
-| **Color Palette** | Generate harmonious palettes, convert HEX/RGB/HSL, export CSS |
-| **Markdown Editor** | Write markdown with live preview, toolbar and HTML export |
-| **Unit Converter** | Convert length, weight, temperature, speed, data and time |
-| **Quick Notes** | Auto-saving notepad with multiple notes, search and export |
+| **ZenType** | Typing test with piano sounds, live metrics, heatmap |
+| **FocusFlow** | Pomodoro timer with custom durations, streaks, session log |
+| **Signature Studio** | Email signature generator with logo, socials, Outlook copy |
+| **QR Studio** | QR codes with custom colors, Wi-Fi, vCard modes |
+| **WordCount Pro** | Text analysis with readability, find/replace, case tools |
+| **Password Generator** | Crypto-random passwords with strength meter |
+| **JSON Formatter** | Validate, format, minify with structure stats |
+| **Color Palette** | Harmonious palettes with HEX/RGB/HSL converter |
+| **Markdown Editor** | Live preview, toolbar, drafts, HTML export |
+| **Unit Converter** | 6 categories: length, weight, temp, speed, data, time |
+| **Quick Notes** | Auto-saving notepad with search and export |
+| **Sports Taxonomy** | 20 sports with bookmarks, compare, tag filters |
+
+## Features
+
+- **Command palette** — Press `Ctrl+K` to search and navigate tools
+- **Dark mode** — System-aware with manual toggle
+- **Local-first** — All data in localStorage, nothing sent to servers
+- **Piano sounds** — Web Audio API generates piano-like tones during typing
+- **Recent tools** — Dashboard tracks your most-used tools
+- **Keyboard-first** — Shortcuts throughout for power users
 
 ## Stack
 
-- Plain HTML, CSS and JavaScript
-- No build step required
-- CDN libraries: QRCode.js, Chart.js
-- Optional Groq API integration for AI typing passages
+- Pure HTML, CSS, JavaScript
+- No build step
+- CDN: Chart.js, QRCode.js
+- Optional: Groq API for AI typing passages
 
 ## Deploy
 
-Drop the folder on any static host (Vercel, Netlify, GitHub Pages, etc).
-
 ```bash
-# Vercel
 vercel --prod
-
-# Or just open index.html locally
+# Or open index.html locally
 ```
 
 ## License

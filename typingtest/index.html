@@ -13,199 +13,519 @@
   <a class="logo" href="../"><span class="mark">⌨</span><span>ZenType</span></a>
   <div class="links">
     <a href="../">Home</a><a href="../FocusFlow/">Focus</a>
+    <button class="btn sm ghost" onclick="_openCmd()" style="font-family:var(--mono)">⌘K</button>
     <button class="theme-toggle" data-theme-toggle>🌙</button>
   </div>
 </div></nav>
 
 <main class="wrap section">
-  <section class="panel tool">
-    <span class="eyebrow">Adaptive typing challenge</span>
-    <h1 class="title">Train speed without losing accuracy.</h1>
-    <div class="formgrid mb">
-      <label>Duration<select id="duration">
-        <option value="30">30 s</option><option value="60">1 min</option>
-        <option value="120" selected>2 min</option><option value="300">5 min</option>
-      </select></label>
-      <label>Difficulty<select id="difficulty">
-        <option>Easy</option><option selected>Medium</option><option>Hard</option>
-      </select></label>
-    </div>
-    <div class="statgrid">
-      <div class="stat"><b id="wpm">0</b><span>Words / min</span></div>
-      <div class="stat"><b id="acc">100%</b><span>Accuracy</span></div>
-      <div class="stat"><b id="err">0</b><span>Errors</span></div>
-      <div class="stat"><b class="timer" id="time">02:00</b><span>Time left</span></div>
-    </div>
-    <div class="toolbar mt">
-      <button class="btn primary" id="start">Start</button>
-      <button class="btn" id="reset">Reset</button>
-      <button class="btn" id="next">New passage</button>
-      <button class="btn" id="custom">Use custom text</button>
-    </div>
-    <div id="passage" class="passage mt"></div>
-    <textarea id="input" rows="4" placeholder="Start typing here..." class="mt"></textarea>
-    <div id="results" class="card hide mt"></div>
-  </section>
 
+  <!-- Config Bar -->
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <select id="duration" class="btn" style="width:auto;border-radius:var(--radius-full)">
+      <option value="30">30 seconds</option>
+      <option value="60" selected>1 minute</option>
+      <option value="120">2 minutes</option>
+      <option value="300">5 minutes</option>
+    </select>
+    <select id="difficulty" class="btn" style="width:auto;border-radius:var(--radius-full)">
+      <option>Easy</option>
+      <option selected>Medium</option>
+      <option>Hard</option>
+    </select>
+    <button class="sound-toggle" id="soundToggle" title="Toggle piano sounds">🎹 Sound</button>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn primary" id="startBtn">Start test</button>
+      <button class="btn" id="newBtn">New passage</button>
+    </div>
+  </div>
+
+  <!-- Live Metrics -->
+  <div class="typing-meter" id="metrics">
+    <div><span class="meter-val brand" id="liveWpm">0</span>WPM</div>
+    <div><span class="meter-val" id="liveAcc">100%</span>Accuracy</div>
+    <div><span class="meter-val" id="liveErrors">0</span>Errors</div>
+    <div><span class="meter-val" id="liveTime">1:00</span>Remaining</div>
+  </div>
+
+  <!-- Typing Zone -->
+  <div class="typing-zone" id="typingZone" tabindex="0">
+    <div id="textDisplay"></div>
+    <input class="typing-hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+
+    <!-- Start Overlay -->
+    <div class="typing-overlay" id="startOverlay">
+      <div style="text-align:center">
+        <h2>Ready to type?</h2>
+        <p class="section-sub">Click here or press any key to begin</p>
+      </div>
+    </div>
+
+    <!-- Results Overlay -->
+    <div class="typing-overlay hide" id="resultsOverlay">
+      <div class="results-card" style="width:min(440px,85vw)">
+        <p style="font-size:13px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Your speed</p>
+        <div class="big-wpm" id="finalWpm">0</div>
+        <p style="font-size:13px;color:var(--text-tertiary)">words per minute</p>
+        <div class="stat-grid cols-4 mt" style="text-align:center">
+          <div class="stat"><b id="finalAcc">0%</b><span>Accuracy</span></div>
+          <div class="stat"><b id="finalRaw">0</b><span>Raw CPM</span></div>
+          <div class="stat"><b id="finalErrors">0</b><span>Errors</span></div>
+          <div class="stat"><b id="finalChars">0</b><span>Characters</span></div>
+        </div>
+        <div class="actions mt" style="justify-content:center">
+          <button class="btn primary" id="retryBtn">Try again</button>
+          <button class="btn" id="newTestBtn">New test</button>
+          <button class="btn" id="shareBtn">Copy result</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Section -->
   <section class="section">
-    <h2>Performance history</h2>
-    <canvas id="chart" height="100"></canvas>
+    <h2 class="section-title">History</h2>
+    <canvas id="chart" height="90"></canvas>
     <table class="table mt">
-      <thead><tr><th>#</th><th>WPM</th><th>Accuracy</th><th>Errors</th><th>Mode</th></tr></thead>
-      <tbody id="history"></tbody>
+      <thead><tr><th>#</th><th>WPM</th><th>Accuracy</th><th>Errors</th><th>Mode</th><th>Date</th></tr></thead>
+      <tbody id="historyBody"></tbody>
     </table>
     <div class="toolbar mt">
-      <button class="btn" id="clearHist">Clear history</button>
+      <button class="btn sm" id="clearHist">Clear history</button>
     </div>
 
-    <h2 class="mt">Keyboard heatmap</h2>
-    <p class="muted">Keys you miss most often appear highlighted.</p>
-    <svg id="heat" viewBox="0 0 760 180" style="width:100%;max-width:860px"></svg>
+    <h2 class="section-title mt" style="margin-top:28px">Keyboard heatmap</h2>
+    <p class="section-sub mb">Keys you miss most appear warmer.</p>
+    <svg id="heatSvg" viewBox="0 0 760 180" style="width:100%;max-width:860px"></svg>
   </section>
+
 </main>
 
 <script>
-const banks = {
+/* ══════════════════════════════════════════════════
+   ZenType v3 — Premium Typing Test Engine
+   ══════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+
+/* ── Passage Banks ── */
+const PASSAGES = {
   Easy: [
-    'The sun was warm on the quiet morning as birds sang gently in the tall green trees by the river. A soft wind carried the scent of fresh flowers across the open field.',
-    'Learning to type well takes patience and daily practice. Start slowly and build speed over time. Focus on pressing each key with the correct finger.',
-    'Books open doors to new worlds and ideas. Reading every day helps you learn new words and think more clearly about the things that matter most.',
-    'A good cup of tea or coffee can make any afternoon feel brighter. Take a moment to rest, breathe deeply, and enjoy the simple things in life.'
+    'The morning light spread across the valley as birds began their songs. A gentle wind carried the scent of fresh grass and wildflowers over the quiet hills. The river moved slowly, reflecting the blue sky like a mirror made of water and light.',
+    'Reading a good book is one of the simplest pleasures in life. Each page turns into a new world filled with ideas and stories that stay with you long after you close the cover. Make time to read every day.',
+    'Learning to type well takes patience and steady practice. Start by focusing on accuracy rather than speed. As your fingers learn the positions of each key, speed will follow naturally. Stay relaxed and let rhythm guide you.',
+    'A cup of warm tea on a cold afternoon can turn any day around. There is something deeply calming about holding a warm mug and watching the steam rise. Simple moments like these deserve our full attention.'
   ],
   Medium: [
-    'Modern productivity requires balancing speed with precision. Effective communication, resilient focus, and careful self-correction under pressure are skills that compound over time and across disciplines.',
-    'The software development lifecycle includes planning, designing, building, testing, deploying, and maintaining applications. Each phase demands attention to detail and collaboration between teams.',
-    'Climate researchers analyze decades of temperature data, ocean current patterns, and atmospheric composition to build models that predict future environmental conditions with increasing accuracy.',
-    'Financial markets respond to a complex mix of economic indicators, geopolitical events, investor sentiment, and central bank policy decisions that ripple through global trading systems.'
+    'Effective productivity comes from knowing when to focus deeply and when to step back and recharge. The most successful people are not those who work the longest hours, but those who protect their energy and direct it toward meaningful work with clear intention.',
+    'Software development is as much about communication as it is about code. Writing clear documentation, choosing descriptive variable names, and breaking complex logic into smaller functions are all acts of empathy toward the next person who reads your work.',
+    'The global economy runs on interconnected systems that respond to policy decisions, technological shifts, and collective human behavior. Understanding these dynamics requires looking beyond headlines and examining the underlying data with a critical eye.',
+    'Design is not just how something looks but how it works. Every pixel, every interaction, every word should serve the person using it. Great design disappears into the experience, leaving only the feeling that everything works exactly as expected.'
   ],
   Hard: [
-    'const handler = async (req, res) => { const { id } = req.params; try { const data = await db.query(`SELECT * FROM users WHERE id = $1`, [id]); return res.json({ status: "ok", data }); } catch (err) { return res.status(500).json({ error: err.message }); } };',
-    'The Schr\u00f6dinger equation i\u0127\u2202\u03a8/\u2202t = H\u03a8 governs quantum systems; superposition collapses upon measurement. Entangled pairs (|00\u27e9 + |11\u27e9)/\u221a2 exhibit non-local correlations that violate Bell\'s inequality with p < 0.001.',
-    'docker run --rm -v $(pwd):/app -w /app -p 3000:3000 node:18-alpine sh -c "npm ci && npm run build && npx serve@latest dist -l 3000" # zero-install production preview',
-    'SELECT u.name, COUNT(o.id) AS orders, SUM(o.total) AS revenue FROM users u JOIN orders o ON u.id = o.user_id WHERE o.created_at >= \'2024-01-01\' GROUP BY u.name HAVING COUNT(o.id) > 5 ORDER BY revenue DESC LIMIT 20;'
+    'const handleRequest = async (req, res) => { const { userId } = req.params; try { const user = await db.query(`SELECT * FROM users WHERE id = $1`, [userId]); if (!user.rows.length) return res.status(404).json({ error: "Not found" }); return res.json({ data: user.rows[0] }); } catch (err) { return res.status(500).json({ error: err.message }); } };',
+    'SELECT u.name, COUNT(o.id) AS order_count, SUM(o.total) AS revenue, AVG(o.total) AS avg_order FROM users u INNER JOIN orders o ON u.id = o.user_id WHERE o.created_at >= \'2024-01-01\' GROUP BY u.name HAVING COUNT(o.id) > 5 ORDER BY revenue DESC LIMIT 25;',
+    'The Heisenberg uncertainty principle states that position (x) and momentum (p) cannot both be known precisely: delta_x * delta_p >= h_bar / 2. This fundamental limit constrains measurement at quantum scales and leads to phenomena like tunneling (probability ~= e^{-2*kappa*L}).',
+    'docker compose -f docker-compose.prod.yml up -d --build && curl -sSf https://api.example.com/health | jq ".status" && echo "Deploy successful at $(date +%Y-%m-%dT%H:%M:%S)" >> /var/log/deploy.log || { echo "FAILED"; exit 1; }'
   ]
 };
 
-let text = '', started = false, secs = 120, total = 120, timer = null;
-const $ = s => document.querySelector(s), input = $('#input');
+/* ── State ── */
+let text = '';
+let typed = [];
+let started = false;
+let finished = false;
+let secs = 60;
+let totalSecs = 60;
+let timer = null;
+let totalKeystrokes = 0;
+let soundEnabled = localStorage.getItem('ws-piano') !== 'off';
 
-function pick() {
-  const d = $('#difficulty').value;
-  const pool = banks[d];
+/* ── Piano Sound Engine (Web Audio API) ── */
+let audioCtx = null;
+const NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25]; // C4 pentatonic-ish
+
+function initAudio() {
+  if (audioCtx) return;
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+}
+
+function playPianoNote(charCode) {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const noteIdx = (charCode || 65) % NOTES.length;
+    const freq = NOTES[noteIdx] * (0.97 + Math.random() * 0.06); // subtle variance
+    const now = audioCtx.currentTime;
+
+    // Main tone
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+
+    // Harmonics for piano-like timbre
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2, now);
+
+    const osc3 = audioCtx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(freq * 3, now);
+
+    // Gains for envelope
+    const mainGain = audioCtx.createGain();
+    const harm2Gain = audioCtx.createGain();
+    const harm3Gain = audioCtx.createGain();
+    const masterGain = audioCtx.createGain();
+
+    // ADSR-like envelope: fast attack, medium decay
+    masterGain.gain.setValueAtTime(0, now);
+    masterGain.gain.linearRampToValueAtTime(0.06, now + 0.008); // attack
+    masterGain.gain.exponentialRampToValueAtTime(0.02, now + 0.08); // decay
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25); // release
+
+    mainGain.gain.value = 1.0;
+    harm2Gain.gain.value = 0.3;
+    harm3Gain.gain.value = 0.1;
+
+    osc.connect(mainGain);
+    osc2.connect(harm2Gain);
+    osc3.connect(harm3Gain);
+    mainGain.connect(masterGain);
+    harm2Gain.connect(masterGain);
+    harm3Gain.connect(masterGain);
+    masterGain.connect(audioCtx.destination);
+
+    osc.start(now);
+    osc2.start(now);
+    osc3.start(now);
+    osc.stop(now + 0.3);
+    osc2.stop(now + 0.3);
+    osc3.stop(now + 0.3);
+  } catch (e) {}
+}
+
+function playErrorNote() {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180 + Math.random() * 40, now);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.04, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } catch (e) {}
+}
+
+/* ── Sound Toggle ── */
+function updateSoundToggle() {
+  const btn = $('#soundToggle');
+  if (soundEnabled) {
+    btn.classList.add('on');
+    btn.textContent = '🎹 Sound on';
+  } else {
+    btn.classList.remove('on');
+    btn.textContent = '🔇 Sound off';
+  }
+}
+$('#soundToggle').onclick = () => {
+  initAudio();
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('ws-piano', soundEnabled ? 'on' : 'off');
+  updateSoundToggle();
+  if (soundEnabled) playPianoNote(67); // preview note
+};
+updateSoundToggle();
+
+/* ── Passage Selection ── */
+function pickPassage() {
+  const diff = $('#difficulty').value;
+  const pool = PASSAGES[diff];
   const base = pool[Math.floor(Math.random() * pool.length)];
-  const target = d === 'Hard' ? 360 : 520;
+  const target = diff === 'Hard' ? 380 : 550;
   text = base;
   while (text.length < target) text += ' ' + pool[Math.floor(Math.random() * pool.length)];
   text = text.slice(0, target).trim();
 }
 
-function fmt(n) { return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
+/* ── Render ── */
+function renderText() {
+  const chars = [...text];
+  let html = '';
+  for (let i = 0; i < chars.length; i++) {
+    let cls = 'char';
+    if (i < typed.length) {
+      cls += typed[i] === chars[i] ? ' correct' : ' incorrect';
+    } else if (i === typed.length) {
+      cls += ' current';
+    } else {
+      cls += ' dimmed';
+    }
+    const ch = chars[i] === ' ' ? '&nbsp;' : chars[i].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    html += `<span class="${cls}">${ch}</span>`;
+  }
+  $('#textDisplay').innerHTML = html;
 
-function draw() {
-  let v = input.value;
-  $('#passage').innerHTML = [...text].map((c, i) =>
-    `<span class="${v[i] == null ? (i === v.length ? 'current' : '') : v[i] === c ? 'ok' : 'bad'}">${c === ' ' ? '&nbsp;' : c.replace(/</g,'&lt;')}</span>`
-  ).join('');
+  // Auto-scroll: keep current character in view
+  const currentEl = $('#textDisplay .current');
+  if (currentEl) {
+    const zone = $('#typingZone');
+    const rect = currentEl.getBoundingClientRect();
+    const zoneRect = zone.getBoundingClientRect();
+    if (rect.bottom > zoneRect.bottom - 20) {
+      zone.scrollTop += rect.bottom - zoneRect.bottom + 40;
+    }
+  }
 }
 
-function stats() {
-  let v = input.value, err = 0;
-  [...v].forEach((c, i) => { if (c !== text[i]) err++; });
-  let mins = (total - secs) / 60 || 1 / 60;
-  let wpm = Math.round((v.trim().split(/\s+/).filter(Boolean).length) / mins);
-  let acc = v.length ? Math.max(0, Math.round(((v.length - err) / v.length) * 100)) : 100;
-  $('#wpm').textContent = wpm;
-  $('#acc').textContent = acc + '%';
-  $('#err').textContent = err;
-  draw();
-  return { wpm, acc, err };
+/* ── Metrics ── */
+function updateMetrics() {
+  const elapsed = totalSecs - secs;
+  const mins = elapsed / 60 || 1 / 60;
+  const correctChars = typed.filter((c, i) => c === text[i]).length;
+  const words = correctChars / 5;
+  const wpm = Math.round(words / mins);
+  const acc = typed.length ? Math.max(0, Math.round((correctChars / typed.length) * 100)) : 100;
+  const errors = typed.filter((c, i) => c !== text[i]).length;
+
+  $('#liveWpm').textContent = wpm;
+  $('#liveAcc').textContent = acc + '%';
+  $('#liveErrors').textContent = errors;
+
+  return { wpm, acc, errors, correctChars };
 }
 
-function tick() { secs--; $('#time').textContent = fmt(secs); if (secs <= 0) finish(); }
+function formatTime(s) {
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
 
-function start() {
+/* ── Timer ── */
+function tick() {
+  secs--;
+  $('#liveTime').textContent = formatTime(secs);
+  updateMetrics();
+  if (secs <= 0) endTest();
+}
+
+/* ── Start ── */
+function startTest() {
   if (started) return;
-  started = true; timer = setInterval(tick, 1000); input.focus();
+  initAudio();
+  started = true;
+  finished = false;
+  $('#startOverlay').classList.add('hide');
+  $('#resultsOverlay').classList.add('hide');
+  $('#hiddenInput').focus();
+  timer = setInterval(tick, 1000);
 }
 
-function reset(full = true) {
-  clearInterval(timer); started = false;
-  total = secs = +$('#duration').value;
-  $('#time').textContent = fmt(secs);
-  input.value = '';
-  if (full) $('#results').classList.add('hide');
-  draw(); stats();
-}
+/* ── End ── */
+function endTest() {
+  if (finished) return;
+  finished = true;
+  started = false;
+  clearInterval(timer);
 
-function finish() {
-  if (!started && secs > 0) return;
-  clearInterval(timer); started = false;
-  const r = stats();
+  const { wpm, acc, errors, correctChars } = updateMetrics();
+  const rawCpm = Math.round(totalKeystrokes / (totalSecs / 60));
+
+  // Display results
+  $('#finalWpm').textContent = wpm;
+  $('#finalAcc').textContent = acc + '%';
+  $('#finalRaw').textContent = rawCpm;
+  $('#finalErrors').textContent = errors;
+  $('#finalChars').textContent = typed.length;
+  $('#resultsOverlay').classList.remove('hide');
+
+  // Save to history
   const hist = JSON.parse(localStorage.ztHist || '[]');
   const miss = JSON.parse(localStorage.ztMiss || '{}');
-  [...input.value].forEach((c, i) => {
-    if (c !== text[i]) miss[text[i] || '?'] = (miss[text[i] || '?'] || 0) + 1;
+  typed.forEach((c, i) => {
+    if (c !== text[i]) {
+      const missed = text[i] || '?';
+      miss[missed] = (miss[missed] || 0) + 1;
+    }
   });
-  hist.unshift({ ...r, date: new Date().toLocaleString(), difficulty: $('#difficulty').value, duration: total });
+  hist.unshift({
+    wpm, acc, err: errors,
+    date: new Date().toLocaleString(),
+    difficulty: $('#difficulty').value,
+    duration: totalSecs
+  });
   localStorage.ztHist = JSON.stringify(hist.slice(0, 50));
   localStorage.ztMiss = JSON.stringify(miss);
-  $('#results').className = 'card mt';
-  $('#results').innerHTML = `<h3>Results</h3><p><b>${r.wpm} WPM</b> · ${r.acc}% accuracy · ${r.err} errors</p>
-    <button class="btn primary" id="share">Copy result</button>`;
-  $('#share').onclick = () => WorkSuite.copyText(`ZenType result: ${r.wpm} WPM, ${r.acc}% accuracy, ${r.err} errors (${total}s ${$('#difficulty').value}).`);
-  renderHist(); heat();
+
+  renderHistory();
+  renderHeatmap();
 }
 
-function renderHist() {
+/* ── Reset ── */
+function resetTest(newPassage) {
+  clearInterval(timer);
+  started = false;
+  finished = false;
+  totalSecs = secs = +$('#duration').value;
+  typed = [];
+  totalKeystrokes = 0;
+  if (newPassage) pickPassage();
+  $('#liveWpm').textContent = '0';
+  $('#liveAcc').textContent = '100%';
+  $('#liveErrors').textContent = '0';
+  $('#liveTime').textContent = formatTime(secs);
+  $('#startOverlay').classList.remove('hide');
+  $('#resultsOverlay').classList.add('hide');
+  $('#typingZone').scrollTop = 0;
+  renderText();
+}
+
+/* ── Input Handling ── */
+$('#hiddenInput').addEventListener('input', e => {
+  e.preventDefault();
+});
+
+$('#hiddenInput').addEventListener('keydown', e => {
+  if (finished) return;
+  if (e.key === 'Escape') { resetTest(false); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  // Start on first key
+  if (!started && e.key.length === 1) {
+    startTest();
+  }
+  if (!started) return;
+
+  totalKeystrokes++;
+
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (typed.length > 0) typed.pop();
+    renderText();
+    updateMetrics();
+    return;
+  }
+
+  if (e.key.length === 1) {
+    e.preventDefault();
+    const idx = typed.length;
+    typed.push(e.key);
+
+    // Piano sound
+    if (e.key === text[idx]) {
+      playPianoNote(e.key.charCodeAt(0));
+    } else {
+      playErrorNote();
+    }
+
+    renderText();
+    updateMetrics();
+
+    // End if text completed
+    if (typed.length >= text.length) endTest();
+  }
+});
+
+// Focus management
+$('#typingZone').addEventListener('click', () => {
+  if (!finished) {
+    initAudio();
+    $('#hiddenInput').focus();
+    if (!started) startTest();
+  }
+});
+
+// Prevent losing focus
+$('#hiddenInput').addEventListener('blur', () => {
+  if (started && !finished) {
+    setTimeout(() => $('#hiddenInput').focus(), 10);
+  }
+});
+
+/* ── Button Handlers ── */
+$('#startBtn').onclick = () => { resetTest(false); initAudio(); $('#hiddenInput').focus(); };
+$('#newBtn').onclick = () => resetTest(true);
+$('#retryBtn').onclick = () => resetTest(false);
+$('#newTestBtn').onclick = () => resetTest(true);
+$('#shareBtn').onclick = () => {
+  const w = $('#finalWpm').textContent;
+  const a = $('#finalAcc').textContent;
+  const e = $('#finalErrors').textContent;
+  WorkSuite.copyText(`ZenType result: ${w} WPM, ${a} accuracy, ${e} errors (${totalSecs}s ${$('#difficulty').value})`);
+};
+$('#duration').onchange = () => resetTest(false);
+$('#difficulty').onchange = () => resetTest(true);
+
+$('#clearHist').onclick = () => {
+  localStorage.removeItem('ztHist');
+  localStorage.removeItem('ztMiss');
+  renderHistory();
+  renderHeatmap();
+  WorkSuite.toast('History cleared');
+};
+
+/* ── History ── */
+function renderHistory() {
   const hist = JSON.parse(localStorage.ztHist || '[]');
-  $('#history').innerHTML = hist.slice(0, 10).map((h, i) =>
-    `<tr><td>${i + 1}</td><td>${h.wpm}</td><td>${h.acc}%</td><td>${h.err}</td><td>${h.difficulty || '—'}</td></tr>`
-  ).join('');
-  if (window.perfChart) window.perfChart.destroy();
-  const recent = hist.slice(0, 10).reverse();
-  if (recent.length) {
-    window.perfChart = new Chart($('#chart'), {
+  $('#historyBody').innerHTML = hist.slice(0, 12).map((h, i) =>
+    `<tr><td>${i + 1}</td><td style="font-weight:700">${h.wpm}</td><td>${h.acc}%</td><td>${h.err}</td><td>${h.difficulty || '—'}</td><td style="color:var(--text-tertiary)">${h.date || '—'}</td></tr>`
+  ).join('') || '<tr><td colspan="6" style="color:var(--text-tertiary)">No tests yet. Start typing to build your history.</td></tr>';
+
+  // Chart
+  if (window._perfChart) window._perfChart.destroy();
+  const recent = hist.slice(0, 12).reverse();
+  if (recent.length > 1) {
+    const style = getComputedStyle(document.documentElement);
+    window._perfChart = new Chart($('#chart'), {
       type: 'line',
       data: {
         labels: recent.map((_, i) => i + 1),
         datasets: [
-          { label: 'WPM', data: recent.map(h => h.wpm), borderColor: '#6c47ff', tension: .35 },
-          { label: 'Accuracy', data: recent.map(h => h.acc), borderColor: '#10b981', tension: .35 }
+          { label: 'WPM', data: recent.map(h => h.wpm), borderColor: '#6246ea', backgroundColor: 'rgba(98,70,234,.1)', fill: true, tension: .4, pointRadius: 4 },
+          { label: 'Accuracy', data: recent.map(h => h.acc), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.05)', fill: true, tension: .4, pointRadius: 3 }
         ]
       },
-      options: { plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
     });
   }
 }
 
-function heat() {
-  const keys = 'QWERTYUIOP ASDFGHJKL ZXCVBNM'.split(' ');
+/* ── Heatmap ── */
+function renderHeatmap() {
+  const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
   const miss = JSON.parse(localStorage.ztMiss || '{}');
+  const maxMiss = Math.max(1, ...Object.values(miss));
   let y = 10, svg = '';
-  keys.forEach((row, ri) => {
+
+  rows.forEach((row, ri) => {
     [...row].forEach((k, i) => {
-      let hot = miss[k.toLowerCase()] || miss[k] || 0;
-      svg += `<rect class="heatkey ${hot ? 'hot' : ''}" x="${20 + i * 66 + ri * 28}" y="${y}" width="56" height="42" rx="9"></rect>`;
-      svg += `<text x="${48 + i * 66 + ri * 28}" y="${y + 27}" text-anchor="middle" fill="currentColor" font-size="13">${k}</text>`;
+      const count = (miss[k.toLowerCase()] || 0) + (miss[k] || 0);
+      const cls = count > maxMiss * 0.5 ? 'hot' : count > 0 ? 'warm' : '';
+      const x = 20 + i * 66 + ri * 28;
+      svg += `<rect class="heatkey ${cls}" x="${x}" y="${y}" width="56" height="42" rx="8"/>`;
+      svg += `<text x="${x + 28}" y="${y + 26}" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600" font-family="var(--font)">${k}</text>`;
     });
     y += 56;
   });
-  $('#heat').innerHTML = svg;
+
+  $('#heatSvg').innerHTML = svg;
 }
 
-$('#start').onclick = start;
-$('#reset').onclick = () => reset();
-$('#next').onclick = () => { pick(); reset(); };
-$('#custom').onclick = () => {
-  const t = prompt('Paste your custom text:');
-  if (t && t.trim().length > 10) { text = t.trim().slice(0, 600); reset(); draw(); WorkSuite.toast('Custom text loaded'); }
-};
-$('#duration').onchange = () => reset();
-$('#difficulty').onchange = () => { pick(); reset(); };
-$('#clearHist').onclick = () => { localStorage.removeItem('ztHist'); localStorage.removeItem('ztMiss'); renderHist(); heat(); WorkSuite.toast('History cleared'); };
-input.oninput = () => { if (!started) start(); stats(); if (input.value.length >= text.length) finish(); };
-
-pick(); reset(); renderHist(); heat();
+/* ── Init ── */
+pickPassage();
+resetTest(false);
+renderHistory();
+renderHeatmap();
 </script>
 </body>
 </html>
