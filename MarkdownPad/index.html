@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Markdown Editor — WorkSuite</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js"></script>
+</head>
+<body>
+<nav class="nav"><div class="wrap navin">
+  <a class="logo" href="../"><span class="mark">📝</span><span>Markdown</span></a>
+  <div class="links"><a href="../">Home</a><a href="../WordCountPro/">WordCount</a><a href="../NotePad/">Notes</a>
+    <button class="theme-toggle" data-theme-toggle>🌙</button>
+  </div>
+</div></nav>
+
+<main class="wrap section">
+  <section class="panel tool">
+    <h1 class="title">Markdown editor</h1>
+    <div class="toolbar mb">
+      <button class="btn" data-ins="**" title="Bold">B</button>
+      <button class="btn" data-ins="*" title="Italic">I</button>
+      <button class="btn" data-ins="`" title="Code">&lt;/&gt;</button>
+      <button class="btn" data-ins="## " data-line title="Heading">H2</button>
+      <button class="btn" data-ins="- " data-line title="List">List</button>
+      <button class="btn" data-ins="> " data-line title="Quote">Quote</button>
+      <button class="btn" data-ins="[text](url)" data-replace title="Link">Link</button>
+      <button class="btn primary" id="exportHTML">Export HTML</button>
+      <button class="btn" id="exportMD">Download .md</button>
+      <button class="btn" id="save">Save draft</button>
+      <button class="btn" id="load">Load draft</button>
+    </div>
+    <div class="two" style="align-items:stretch">
+      <div>
+        <label>Markdown</label>
+        <textarea id="editor" rows="20" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:14px;resize:vertical;min-height:400px" placeholder="# Hello World
+
+Write **markdown** here and see the preview update in real time.
+
+- Item one
+- Item two
+
+> A blockquote
+
+`inline code`"></textarea>
+      </div>
+      <div>
+        <label>Preview</label>
+        <div class="md-preview" id="preview" style="min-height:400px"></div>
+      </div>
+    </div>
+    <div class="statgrid mt">
+      <div class="stat"><b id="words">0</b><span>Words</span></div>
+      <div class="stat"><b id="chars">0</b><span>Characters</span></div>
+      <div class="stat"><b id="lines">0</b><span>Lines</span></div>
+      <div class="stat"><b id="read">0m</b><span>Reading time</span></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const editor=$('#editor');
+
+// Simple markdown to HTML converter
+function md(text){
+  let html=text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // code blocks
+    .replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>')
+    // headings
+    .replace(/^#### (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    // hr
+    .replace(/^---$/gm,'<hr>')
+    // bold+italic
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<b><i>$1</i></b>')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+    .replace(/\*(.+?)\*/g,'<i>$1</i>')
+    // inline code
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    // images
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" style="max-width:100%;border-radius:8px">')
+    // links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener" style="color:var(--brand)">$1</a>')
+    // blockquotes
+    .replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>')
+    // unordered lists
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    // ordered lists
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    // wrap consecutive <li>
+    .replace(/(<li>.*<\/li>\n?)+/g,m=>'<ul>'+m+'</ul>')
+    // paragraphs
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  return '<p>'+html+'</p>';
+}
+
+function render(){
+  $('#preview').innerHTML=md(editor.value);
+  const words=(editor.value.match(/\S+/g)||[]).length;
+  $('#words').textContent=words;
+  $('#chars').textContent=editor.value.length;
+  $('#lines').textContent=editor.value.split('\n').length;
+  $('#read').textContent=Math.max(1,Math.ceil(words/200))+'m';
+}
+
+// Toolbar insertion
+document.querySelectorAll('[data-ins]').forEach(btn=>{
+  btn.onclick=()=>{
+    const ins=btn.dataset.ins;
+    const start=editor.selectionStart,end=editor.selectionEnd;
+    const sel=editor.value.substring(start,end);
+    if(btn.dataset.replace){
+      editor.setRangeText(ins,start,end);
+    }else if(btn.dataset.line){
+      const lineStart=editor.value.lastIndexOf('\n',start-1)+1;
+      editor.setRangeText(ins,lineStart,lineStart);
+    }else{
+      editor.setRangeText(ins+sel+ins,start,end);
+    }
+    editor.focus();render();
+  };
+});
+
+// Tab key inserts spaces
+editor.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const s=editor.selectionStart;
+    editor.setRangeText('  ',s,s);
+    editor.selectionStart=editor.selectionEnd=s+2;
+    render();
+  }
+});
+
+$('#exportHTML').onclick=()=>{
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Document</title><style>body{font-family:system-ui;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.7}code{background:#f3f4f6;padding:2px 6px;border-radius:4px}pre{background:#f3f4f6;padding:16px;border-radius:8px;overflow-x:auto}blockquote{border-left:3px solid #6c47ff;padding-left:16px;color:#6b7280;font-style:italic}</style></head><body>${md(editor.value)}</body></html>`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));a.download='document.html';a.click();
+};
+
+$('#exportMD').onclick=()=>{
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([editor.value],{type:'text/markdown'}));a.download='document.md';a.click();
+};
+
+$('#save').onclick=()=>{localStorage.mdDraft=editor.value;WorkSuite.toast('Draft saved')};
+$('#load').onclick=()=>{if(localStorage.mdDraft){editor.value=localStorage.mdDraft;render();WorkSuite.toast('Draft loaded')}else{WorkSuite.toast('No saved draft')}};
+
+editor.oninput=render;
+
+// Load draft if exists
+if(localStorage.mdDraft)editor.value=localStorage.mdDraft;
+render();
+</script>
+</body>
+</html>

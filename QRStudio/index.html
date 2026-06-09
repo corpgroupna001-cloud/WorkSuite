@@ -1,1 +1,124 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR Studio — WorkSuite</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script></head><body><nav class="nav"><div class="wrap navin"><a class="logo" href="../"><span class="mark">▦</span><span>QR Studio</span></a><div class="links"><a href="../">Home</a><a href="../FocusFlow/">FocusFlow</a><button class="theme-toggle" data-theme-toggle>🌙</button></div></div></nav><main class="wrap section"><section class="panel tool"><h1 class="title">Real-time QR code generator</h1><div class="two"><div class="card"><label>URL, text, phone or email<textarea id="text" rows="6">https://work-suite-mauve.vercel.app</textarea></label><div class="formgrid"><label>Foreground<input id="fg" type="color" value="#11172c"></label><label>Background<input id="bg" type="color" value="#ffffff"></label></div><div class="toolbar"><button class="btn primary" id="download">Download PNG</button><button class="btn" id="clear">Clear</button></div></div><div class="qrbox"><div id="qr"></div><p class="mini">Live preview updates as you type.</p></div></div></section></main><script>const $=s=>document.querySelector(s);let qr;function make(){const text=$('#text').value||' ';$('#qr').innerHTML='';qr=new QRCode($('#qr'),{text,width:240,height:240,colorDark:$('#fg').value,colorLight:$('#bg').value,correctLevel:QRCode.CorrectLevel.H})}['text','fg','bg'].forEach(id=>$('#'+id).addEventListener('input',make));$('#download').onclick=()=>{const img=$('#qr img')||$('#qr canvas');let url=img.tagName==='IMG'?img.src:img.toDataURL('image/png');const a=document.createElement('a');a.href=url;a.download='worksuite-qr.png';a.click()};$('#clear').onclick=()=>{$('#text').value='';make()};make();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QR Studio — WorkSuite</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<nav class="nav"><div class="wrap navin">
+  <a class="logo" href="../"><span class="mark">▦</span><span>QR Studio</span></a>
+  <div class="links">
+    <a href="../">Home</a><a href="../PasswordGen/">Passwords</a>
+    <button class="theme-toggle" data-theme-toggle>🌙</button>
+  </div>
+</div></nav>
+
+<main class="wrap section">
+  <section class="panel tool">
+    <h1 class="title">QR code generator</h1>
+    <p class="muted mb">Enter any URL, text, phone number, email or vCard data and get a live QR code.</p>
+    <div class="two">
+      <div>
+        <div class="toolbar mb">
+          <button class="tab active" data-mode="text">Text / URL</button>
+          <button class="tab" data-mode="wifi">Wi-Fi</button>
+          <button class="tab" data-mode="vcard">vCard</button>
+        </div>
+
+        <div id="modeText">
+          <label>Content<textarea id="text" rows="4" placeholder="https://example.com">https://worksuite.vercel.app</textarea></label>
+        </div>
+        <div id="modeWifi" class="hide">
+          <div class="formgrid">
+            <label>SSID<input id="wifiSSID" placeholder="Network name"></label>
+            <label>Password<input id="wifiPass" placeholder="Password"></label>
+          </div>
+          <label>Encryption<select id="wifiEnc"><option>WPA</option><option>WEP</option><option>nopass</option></select></label>
+        </div>
+        <div id="modeVcard" class="hide">
+          <div class="formgrid">
+            <label>Name<input id="vcName" placeholder="Jane Doe"></label>
+            <label>Phone<input id="vcPhone" placeholder="+1234567890"></label>
+            <label>Email<input id="vcEmail" placeholder="jane@example.com"></label>
+            <label>Org<input id="vcOrg" placeholder="Company"></label>
+          </div>
+        </div>
+
+        <div class="formgrid mt">
+          <label>Foreground<input id="fg" type="color" value="#0f1729"></label>
+          <label>Background<input id="bg" type="color" value="#ffffff"></label>
+        </div>
+        <label class="mt">Size: <span id="sizeLabel">240</span>px
+          <input type="range" id="size" min="120" max="500" value="240" style="border:none;padding:0">
+        </label>
+        <div class="toolbar mt">
+          <button class="btn primary" id="download">Download PNG</button>
+          <button class="btn" id="clear">Clear</button>
+        </div>
+      </div>
+      <div class="qrbox">
+        <div id="qr"></div>
+        <p class="mini mt">Updates as you type.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let qr, currentMode = 'text';
+
+function getContent() {
+  if (currentMode === 'wifi') {
+    const s = $('#wifiSSID').value, p = $('#wifiPass').value, e = $('#wifiEnc').value;
+    return `WIFI:T:${e};S:${s};P:${p};;`;
+  }
+  if (currentMode === 'vcard') {
+    const n = $('#vcName').value, p = $('#vcPhone').value, e = $('#vcEmail').value, o = $('#vcOrg').value;
+    return `BEGIN:VCARD\nVERSION:3.0\nFN:${n}\nTEL:${p}\nEMAIL:${e}\nORG:${o}\nEND:VCARD`;
+  }
+  return $('#text').value || ' ';
+}
+
+function make() {
+  const text = getContent();
+  const sz = +$('#size').value;
+  $('#sizeLabel').textContent = sz;
+  $('#qr').innerHTML = '';
+  qr = new QRCode($('#qr'), {
+    text, width: sz, height: sz,
+    colorDark: $('#fg').value, colorLight: $('#bg').value,
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    ['modeText', 'modeWifi', 'modeVcard'].forEach(id => $('#' + id).classList.add('hide'));
+    $('#mode' + currentMode.charAt(0).toUpperCase() + currentMode.slice(1)).classList.remove('hide');
+    make();
+  };
+});
+
+['text', 'fg', 'bg', 'size', 'wifiSSID', 'wifiPass', 'wifiEnc', 'vcName', 'vcPhone', 'vcEmail', 'vcOrg'].forEach(id => {
+  const el = $('#' + id);
+  if (el) el.addEventListener('input', make);
+});
+
+$('#download').onclick = () => {
+  const img = $('#qr img') || $('#qr canvas');
+  const url = img.tagName === 'IMG' ? img.src : img.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = url; a.download = 'worksuite-qr.png'; a.click();
+};
+$('#clear').onclick = () => { $('#text').value = ''; make(); };
+make();
+</script>
+</body>
+</html>

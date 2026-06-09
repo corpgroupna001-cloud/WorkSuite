@@ -1,1 +1,211 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ZenType AI — Typing Test</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head><body><nav class="nav"><div class="wrap navin"><a class="logo" href="../"><span class="mark">⌨</span><span>ZenType AI</span></a><div class="links"><a href="../">Home</a><a href="../signature/">Signature</a><a href="../FocusFlow/">FocusFlow</a><button class="theme-toggle" data-theme-toggle>🌙</button></div></div></nav><main class="wrap section"><section class="panel tool"><span class="eyebrow">Adaptive typing challenge</span><h1 class="title">Train speed without losing accuracy.</h1><div class="formgrid"><label>Time mode<select id="duration"><option value="30">30s</option><option value="60">1 min</option><option selected value="120">2 min</option><option value="300">5 min</option></select></label><label>Difficulty<select id="difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></label></div><div class="statgrid"><div class="stat"><b id="wpm">0</b><span>Words / min</span></div><div class="stat"><b id="acc">100%</b><span>Accuracy</span></div><div class="stat"><b id="err">0</b><span>Errors</span></div><div class="stat"><b class="timer" id="time">02:00</b><span>Time</span></div></div><div class="toolbar"><button class="btn primary" id="start">Start</button><button class="btn" id="reset">Reset</button><button class="btn" id="next">New Passage</button></div><div id="passage" class="passage"></div><textarea id="input" rows="5" placeholder="Start typing here..."></textarea><div id="results" class="card hide"></div></section><section class="section"><h2>Performance History</h2><canvas id="chart" height="120"></canvas><table class="table"><thead><tr><th>Attempt</th><th>WPM</th><th>Accuracy</th><th>Errors</th></tr></thead><tbody id="history"></tbody></table><h2>Keyboard heatmap</h2><svg id="heat" viewBox="0 0 760 180" style="width:100%;max-width:860px"></svg></section></main><script>const banks={Easy:['focus calm steady rhythm words practice clean speed accuracy improve today bright simple useful work'],Medium:['Modern work rewards clear thinking, fast communication, resilient focus, and careful correction under pressure.'],Hard:['const score = Math.max(0, wpm*accuracy) => { return `speed:${wpm}`; } // symbols: []{}!@#$%^&*()']};let text='',started=false,secs=120,total=120,timer=null;const $=s=>document.querySelector(s),input=$('#input');function pick(){const d=$('#difficulty').value,base=banks[d][Math.floor(Math.random()*banks[d].length)];text=Array(6).fill(base).join(' ').slice(0,d==='Hard'?360:520)}function fmt(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}function draw(){let v=input.value;$('#passage').innerHTML=[...text].map((c,i)=>`<span class="${v[i]==null?(i===v.length?'current':''):v[i]===c?'ok':'bad'}">${c===' '?'&nbsp;':c}</span>`).join('')}function stats(){let v=input.value,err=0;[...v].forEach((c,i)=>{if(c!==text[i])err++});let mins=(total-secs)/60||1/60,wpm=Math.round((v.trim().split(/\s+/).filter(Boolean).length)/mins),acc=v.length?Math.max(0,Math.round(((v.length-err)/v.length)*100)):100;$('#wpm').textContent=wpm;$('#acc').textContent=acc+'%';$('#err').textContent=err;draw();return{wpm,acc,err}}function tick(){secs--;$('#time').textContent=fmt(secs);if(secs<=0)finish()}function start(){if(started)return;started=true;timer=setInterval(tick,1000);input.focus()}function reset(full=true){clearInterval(timer);started=false;total=secs=+$('#duration').value;$('#time').textContent=fmt(secs);input.value='';if(full)$('#results').classList.add('hide');draw();stats()}async function finish(){if(!started&&secs>0)return;clearInterval(timer);started=false;const r=stats(),hist=JSON.parse(localStorage.ztHist||'[]'),miss=JSON.parse(localStorage.ztMiss||'{}');[...input.value].forEach((c,i)=>{if(c!==text[i])miss[text[i]||'?']=(miss[text[i]||'?']||0)+1});hist.unshift({...r,date:new Date().toLocaleString(),difficulty:$('#difficulty').value,duration:total});localStorage.ztHist=JSON.stringify(hist.slice(0,50));localStorage.ztMiss=JSON.stringify(miss);$('#results').className='card';$('#results').innerHTML=`<h3>Results</h3><p><b>${r.wpm} WPM</b> · ${r.acc}% accuracy · ${r.err} errors</p><button class="btn primary" id="share">Share result</button>`;$('#share').onclick=async()=>navigator.clipboard.writeText(`ZenType AI result: ${r.wpm} WPM, ${r.acc}% accuracy, ${r.err} errors (${total}s ${$('#difficulty').value}).`);renderHist();heat()}function renderHist(){const hist=JSON.parse(localStorage.ztHist||'[]');$('#history').innerHTML=hist.slice(0,10).map((h,i)=>`<tr><td>${i+1}</td><td>${h.wpm}</td><td>${h.acc}%</td><td>${h.err}</td></tr>`).join('');if(window.chart)window.chart.destroy();window.chart=new Chart($('#chart'),{type:'line',data:{labels:hist.slice(0,10).reverse().map((_,i)=>i+1),datasets:[{label:'WPM',data:hist.slice(0,10).reverse().map(h=>h.wpm),tension:.35}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}})}function heat(){const keys='QWERTYUIOP ASDFGHJKL ZXCVBNM'.split(' '),miss=JSON.parse(localStorage.ztMiss||'{}');let y=10,svg='';keys.forEach((row,ri)=>{[...row].forEach((k,i)=>{let hot=miss[k.toLowerCase()]||miss[k]||0;svg+=`<rect class="heatkey ${hot?'hot':''}" x="${20+i*66+ri*28}" y="${y}" width="56" height="42" rx="9"></rect><text x="${48+i*66+ri*28}" y="${y+27}" text-anchor="middle" fill="currentColor">${k}</text>`});y+=56});$('#heat').innerHTML=svg}$('#start').onclick=start;$('#reset').onclick=()=>reset();$('#next').onclick=()=>{pick();reset()};$('#duration').onchange=()=>reset();$('#difficulty').onchange=()=>{pick();reset()};input.oninput=()=>{if(!started)start();stats();if(input.value.length>=text.length)finish()};pick();reset();renderHist();heat();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ZenType — Typing Test | WorkSuite</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<nav class="nav"><div class="wrap navin">
+  <a class="logo" href="../"><span class="mark">⌨</span><span>ZenType</span></a>
+  <div class="links">
+    <a href="../">Home</a><a href="../FocusFlow/">Focus</a>
+    <button class="theme-toggle" data-theme-toggle>🌙</button>
+  </div>
+</div></nav>
+
+<main class="wrap section">
+  <section class="panel tool">
+    <span class="eyebrow">Adaptive typing challenge</span>
+    <h1 class="title">Train speed without losing accuracy.</h1>
+    <div class="formgrid mb">
+      <label>Duration<select id="duration">
+        <option value="30">30 s</option><option value="60">1 min</option>
+        <option value="120" selected>2 min</option><option value="300">5 min</option>
+      </select></label>
+      <label>Difficulty<select id="difficulty">
+        <option>Easy</option><option selected>Medium</option><option>Hard</option>
+      </select></label>
+    </div>
+    <div class="statgrid">
+      <div class="stat"><b id="wpm">0</b><span>Words / min</span></div>
+      <div class="stat"><b id="acc">100%</b><span>Accuracy</span></div>
+      <div class="stat"><b id="err">0</b><span>Errors</span></div>
+      <div class="stat"><b class="timer" id="time">02:00</b><span>Time left</span></div>
+    </div>
+    <div class="toolbar mt">
+      <button class="btn primary" id="start">Start</button>
+      <button class="btn" id="reset">Reset</button>
+      <button class="btn" id="next">New passage</button>
+      <button class="btn" id="custom">Use custom text</button>
+    </div>
+    <div id="passage" class="passage mt"></div>
+    <textarea id="input" rows="4" placeholder="Start typing here..." class="mt"></textarea>
+    <div id="results" class="card hide mt"></div>
+  </section>
+
+  <section class="section">
+    <h2>Performance history</h2>
+    <canvas id="chart" height="100"></canvas>
+    <table class="table mt">
+      <thead><tr><th>#</th><th>WPM</th><th>Accuracy</th><th>Errors</th><th>Mode</th></tr></thead>
+      <tbody id="history"></tbody>
+    </table>
+    <div class="toolbar mt">
+      <button class="btn" id="clearHist">Clear history</button>
+    </div>
+
+    <h2 class="mt">Keyboard heatmap</h2>
+    <p class="muted">Keys you miss most often appear highlighted.</p>
+    <svg id="heat" viewBox="0 0 760 180" style="width:100%;max-width:860px"></svg>
+  </section>
+</main>
+
+<script>
+const banks = {
+  Easy: [
+    'The sun was warm on the quiet morning as birds sang gently in the tall green trees by the river. A soft wind carried the scent of fresh flowers across the open field.',
+    'Learning to type well takes patience and daily practice. Start slowly and build speed over time. Focus on pressing each key with the correct finger.',
+    'Books open doors to new worlds and ideas. Reading every day helps you learn new words and think more clearly about the things that matter most.',
+    'A good cup of tea or coffee can make any afternoon feel brighter. Take a moment to rest, breathe deeply, and enjoy the simple things in life.'
+  ],
+  Medium: [
+    'Modern productivity requires balancing speed with precision. Effective communication, resilient focus, and careful self-correction under pressure are skills that compound over time and across disciplines.',
+    'The software development lifecycle includes planning, designing, building, testing, deploying, and maintaining applications. Each phase demands attention to detail and collaboration between teams.',
+    'Climate researchers analyze decades of temperature data, ocean current patterns, and atmospheric composition to build models that predict future environmental conditions with increasing accuracy.',
+    'Financial markets respond to a complex mix of economic indicators, geopolitical events, investor sentiment, and central bank policy decisions that ripple through global trading systems.'
+  ],
+  Hard: [
+    'const handler = async (req, res) => { const { id } = req.params; try { const data = await db.query(`SELECT * FROM users WHERE id = $1`, [id]); return res.json({ status: "ok", data }); } catch (err) { return res.status(500).json({ error: err.message }); } };',
+    'The Schr\u00f6dinger equation i\u0127\u2202\u03a8/\u2202t = H\u03a8 governs quantum systems; superposition collapses upon measurement. Entangled pairs (|00\u27e9 + |11\u27e9)/\u221a2 exhibit non-local correlations that violate Bell\'s inequality with p < 0.001.',
+    'docker run --rm -v $(pwd):/app -w /app -p 3000:3000 node:18-alpine sh -c "npm ci && npm run build && npx serve@latest dist -l 3000" # zero-install production preview',
+    'SELECT u.name, COUNT(o.id) AS orders, SUM(o.total) AS revenue FROM users u JOIN orders o ON u.id = o.user_id WHERE o.created_at >= \'2024-01-01\' GROUP BY u.name HAVING COUNT(o.id) > 5 ORDER BY revenue DESC LIMIT 20;'
+  ]
+};
+
+let text = '', started = false, secs = 120, total = 120, timer = null;
+const $ = s => document.querySelector(s), input = $('#input');
+
+function pick() {
+  const d = $('#difficulty').value;
+  const pool = banks[d];
+  const base = pool[Math.floor(Math.random() * pool.length)];
+  const target = d === 'Hard' ? 360 : 520;
+  text = base;
+  while (text.length < target) text += ' ' + pool[Math.floor(Math.random() * pool.length)];
+  text = text.slice(0, target).trim();
+}
+
+function fmt(n) { return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
+
+function draw() {
+  let v = input.value;
+  $('#passage').innerHTML = [...text].map((c, i) =>
+    `<span class="${v[i] == null ? (i === v.length ? 'current' : '') : v[i] === c ? 'ok' : 'bad'}">${c === ' ' ? '&nbsp;' : c.replace(/</g,'&lt;')}</span>`
+  ).join('');
+}
+
+function stats() {
+  let v = input.value, err = 0;
+  [...v].forEach((c, i) => { if (c !== text[i]) err++; });
+  let mins = (total - secs) / 60 || 1 / 60;
+  let wpm = Math.round((v.trim().split(/\s+/).filter(Boolean).length) / mins);
+  let acc = v.length ? Math.max(0, Math.round(((v.length - err) / v.length) * 100)) : 100;
+  $('#wpm').textContent = wpm;
+  $('#acc').textContent = acc + '%';
+  $('#err').textContent = err;
+  draw();
+  return { wpm, acc, err };
+}
+
+function tick() { secs--; $('#time').textContent = fmt(secs); if (secs <= 0) finish(); }
+
+function start() {
+  if (started) return;
+  started = true; timer = setInterval(tick, 1000); input.focus();
+}
+
+function reset(full = true) {
+  clearInterval(timer); started = false;
+  total = secs = +$('#duration').value;
+  $('#time').textContent = fmt(secs);
+  input.value = '';
+  if (full) $('#results').classList.add('hide');
+  draw(); stats();
+}
+
+function finish() {
+  if (!started && secs > 0) return;
+  clearInterval(timer); started = false;
+  const r = stats();
+  const hist = JSON.parse(localStorage.ztHist || '[]');
+  const miss = JSON.parse(localStorage.ztMiss || '{}');
+  [...input.value].forEach((c, i) => {
+    if (c !== text[i]) miss[text[i] || '?'] = (miss[text[i] || '?'] || 0) + 1;
+  });
+  hist.unshift({ ...r, date: new Date().toLocaleString(), difficulty: $('#difficulty').value, duration: total });
+  localStorage.ztHist = JSON.stringify(hist.slice(0, 50));
+  localStorage.ztMiss = JSON.stringify(miss);
+  $('#results').className = 'card mt';
+  $('#results').innerHTML = `<h3>Results</h3><p><b>${r.wpm} WPM</b> · ${r.acc}% accuracy · ${r.err} errors</p>
+    <button class="btn primary" id="share">Copy result</button>`;
+  $('#share').onclick = () => WorkSuite.copyText(`ZenType result: ${r.wpm} WPM, ${r.acc}% accuracy, ${r.err} errors (${total}s ${$('#difficulty').value}).`);
+  renderHist(); heat();
+}
+
+function renderHist() {
+  const hist = JSON.parse(localStorage.ztHist || '[]');
+  $('#history').innerHTML = hist.slice(0, 10).map((h, i) =>
+    `<tr><td>${i + 1}</td><td>${h.wpm}</td><td>${h.acc}%</td><td>${h.err}</td><td>${h.difficulty || '—'}</td></tr>`
+  ).join('');
+  if (window.perfChart) window.perfChart.destroy();
+  const recent = hist.slice(0, 10).reverse();
+  if (recent.length) {
+    window.perfChart = new Chart($('#chart'), {
+      type: 'line',
+      data: {
+        labels: recent.map((_, i) => i + 1),
+        datasets: [
+          { label: 'WPM', data: recent.map(h => h.wpm), borderColor: '#6c47ff', tension: .35 },
+          { label: 'Accuracy', data: recent.map(h => h.acc), borderColor: '#10b981', tension: .35 }
+        ]
+      },
+      options: { plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+}
+
+function heat() {
+  const keys = 'QWERTYUIOP ASDFGHJKL ZXCVBNM'.split(' ');
+  const miss = JSON.parse(localStorage.ztMiss || '{}');
+  let y = 10, svg = '';
+  keys.forEach((row, ri) => {
+    [...row].forEach((k, i) => {
+      let hot = miss[k.toLowerCase()] || miss[k] || 0;
+      svg += `<rect class="heatkey ${hot ? 'hot' : ''}" x="${20 + i * 66 + ri * 28}" y="${y}" width="56" height="42" rx="9"></rect>`;
+      svg += `<text x="${48 + i * 66 + ri * 28}" y="${y + 27}" text-anchor="middle" fill="currentColor" font-size="13">${k}</text>`;
+    });
+    y += 56;
+  });
+  $('#heat').innerHTML = svg;
+}
+
+$('#start').onclick = start;
+$('#reset').onclick = () => reset();
+$('#next').onclick = () => { pick(); reset(); };
+$('#custom').onclick = () => {
+  const t = prompt('Paste your custom text:');
+  if (t && t.trim().length > 10) { text = t.trim().slice(0, 600); reset(); draw(); WorkSuite.toast('Custom text loaded'); }
+};
+$('#duration').onchange = () => reset();
+$('#difficulty').onchange = () => { pick(); reset(); };
+$('#clearHist').onclick = () => { localStorage.removeItem('ztHist'); localStorage.removeItem('ztMiss'); renderHist(); heat(); WorkSuite.toast('History cleared'); };
+input.oninput = () => { if (!started) start(); stats(); if (input.value.length >= text.length) finish(); };
+
+pick(); reset(); renderHist(); heat();
+</script>
+</body>
+</html>

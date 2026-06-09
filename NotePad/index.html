@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quick Notes — WorkSuite</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js"></script>
+</head>
+<body>
+<nav class="nav"><div class="wrap navin">
+  <a class="logo" href="../"><span class="mark">📋</span><span>Quick Notes</span></a>
+  <div class="links"><a href="../">Home</a><a href="../MarkdownPad/">Markdown</a><a href="../WordCountPro/">WordCount</a>
+    <button class="theme-toggle" data-theme-toggle>🌙</button>
+  </div>
+</div></nav>
+
+<main class="wrap section">
+  <section class="panel tool">
+    <h1 class="title">Quick notes</h1>
+    <p class="muted mb">Lightweight notepad with auto-save. All notes stay in your browser.</p>
+
+    <div class="two" style="align-items:start">
+      <div>
+        <div class="toolbar mb">
+          <button class="btn primary" id="newNote">New note</button>
+          <button class="btn" id="deleteNote">Delete</button>
+        </div>
+        <input id="search" placeholder="Search notes..." class="mb">
+        <div id="noteList" style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow:auto"></div>
+        <p class="mini mt">Notes: <b id="count">0</b></p>
+      </div>
+      <div>
+        <input id="noteTitle" placeholder="Note title..." style="font-size:18px;font-weight:800;border:none;background:transparent;padding:0 0 8px;border-bottom:1px solid var(--border);border-radius:0">
+        <textarea id="noteBody" rows="20" placeholder="Start writing..." style="resize:vertical;min-height:360px;margin-top:12px"></textarea>
+        <div class="statgrid mt">
+          <div class="stat"><b id="words">0</b><span>Words</span></div>
+          <div class="stat"><b id="chars">0</b><span>Characters</span></div>
+        </div>
+        <div class="toolbar mt">
+          <button class="btn" id="copyNote">Copy text</button>
+          <button class="btn" id="downloadNote">Download .txt</button>
+          <button class="btn" id="downloadAll">Export all notes</button>
+        </div>
+        <p class="mini mt" id="saveStatus">Auto-saves as you type</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const KEY='ws-notes';
+
+function getNotes(){return JSON.parse(localStorage.getItem(KEY)||'[]')}
+function saveNotes(notes){localStorage.setItem(KEY,JSON.stringify(notes))}
+
+let currentId=null;
+
+function createNote(){
+  const notes=getNotes();
+  const note={id:Date.now().toString(),title:'Untitled note',body:'',created:new Date().toISOString(),updated:new Date().toISOString()};
+  notes.unshift(note);
+  saveNotes(notes);
+  currentId=note.id;
+  renderList();loadNote(note.id);
+}
+
+function loadNote(id){
+  currentId=id;
+  const notes=getNotes();
+  const note=notes.find(n=>n.id===id);
+  if(!note)return;
+  $('#noteTitle').value=note.title;
+  $('#noteBody').value=note.body;
+  updateStats();
+  renderList();
+}
+
+function saveCurrentNote(){
+  if(!currentId)return;
+  const notes=getNotes();
+  const note=notes.find(n=>n.id===currentId);
+  if(!note)return;
+  note.title=$('#noteTitle').value||'Untitled note';
+  note.body=$('#noteBody').value;
+  note.updated=new Date().toISOString();
+  saveNotes(notes);
+  $('#saveStatus').textContent='Saved '+new Date().toLocaleTimeString();
+  renderList();
+}
+
+function deleteNote(){
+  if(!currentId)return;
+  if(!confirm('Delete this note?'))return;
+  let notes=getNotes().filter(n=>n.id!==currentId);
+  saveNotes(notes);
+  currentId=notes.length?notes[0].id:null;
+  if(currentId)loadNote(currentId);
+  else{$('#noteTitle').value='';$('#noteBody').value=''}
+  renderList();
+  WorkSuite.toast('Note deleted');
+}
+
+function updateStats(){
+  const words=($('#noteBody').value.match(/\S+/g)||[]).length;
+  $('#words').textContent=words;
+  $('#chars').textContent=$('#noteBody').value.length;
+}
+
+function renderList(){
+  const notes=getNotes();
+  const term=$('#search').value.toLowerCase();
+  const filtered=notes.filter(n=>(n.title+n.body).toLowerCase().includes(term));
+  $('#count').textContent=notes.length;
+  $('#noteList').innerHTML=filtered.map(n=>{
+    const date=new Date(n.updated).toLocaleDateString();
+    const preview=n.body.slice(0,60).replace(/\n/g,' ');
+    return`<div class="note-item${n.id===currentId?' active':''}" data-id="${n.id}">
+      <h4>${n.title||'Untitled'}</h4>
+      <p>${preview||'Empty note'} · ${date}</p>
+    </div>`;
+  }).join('')||'<p class="muted">No notes yet.</p>';
+  document.querySelectorAll('.note-item').forEach(el=>{
+    el.onclick=()=>loadNote(el.dataset.id);
+  });
+}
+
+let saveTimer;
+function autoSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveCurrentNote,400)}
+
+$('#noteTitle').oninput=autoSave;
+$('#noteBody').oninput=()=>{updateStats();autoSave()};
+$('#newNote').onclick=createNote;
+$('#deleteNote').onclick=deleteNote;
+$('#search').oninput=renderList;
+$('#copyNote').onclick=()=>WorkSuite.copyText($('#noteBody').value);
+$('#downloadNote').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([$('#noteBody').value],{type:'text/plain'}));
+  a.download=($('#noteTitle').value||'note')+'.txt';a.click();
+};
+$('#downloadAll').onclick=()=>{
+  const notes=getNotes();
+  const text=notes.map(n=>`# ${n.title}\n${n.body}\n\n---\n`).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+  a.download='worksuite-notes.txt';a.click();
+};
+
+// Init
+const notes=getNotes();
+if(notes.length===0)createNote();
+else{currentId=notes[0].id;loadNote(currentId)}
+renderList();
+</script>
+</body>
+</html>
