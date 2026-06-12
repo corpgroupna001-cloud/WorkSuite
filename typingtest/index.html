@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="../assets/styles.css">
   <script src="../assets/app.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style>
+    .typing-zone {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    #textDisplay {
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: normal;
+      line-height: 1.8;
+    }
+
+    #textDisplay .char {
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
 <nav class="nav"><div class="wrap navin">
@@ -87,7 +105,16 @@
     <h2 class="section-title">History</h2>
     <canvas id="chart" height="90"></canvas>
     <table class="table mt">
-      <thead><tr><th>#</th><th>WPM</th><th>Accuracy</th><th>Errors</th><th>Mode</th><th>Date</th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>WPM</th>
+          <th>Accuracy</th>
+          <th>Errors</th>
+          <th>Mode</th>
+          <th>Date</th>
+        </tr>
+      </thead>
       <tbody id="historyBody"></tbody>
     </table>
     <div class="toolbar mt">
@@ -143,26 +170,28 @@ let soundEnabled = localStorage.getItem('ws-piano') !== 'off';
 
 /* ── Piano Sound Engine (Web Audio API) ── */
 let audioCtx = null;
-const NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25]; // C4 pentatonic-ish
+const NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
 
 function initAudio() {
   if (audioCtx) return;
-  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {}
 }
 
 function playPianoNote(charCode) {
   if (!soundEnabled || !audioCtx) return;
+
   try {
     const noteIdx = (charCode || 65) % NOTES.length;
-    const freq = NOTES[noteIdx] * (0.97 + Math.random() * 0.06); // subtle variance
+    const freq = NOTES[noteIdx] * (0.97 + Math.random() * 0.06);
     const now = audioCtx.currentTime;
 
-    // Main tone
     const osc = audioCtx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
 
-    // Harmonics for piano-like timbre
     const osc2 = audioCtx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
@@ -171,17 +200,15 @@ function playPianoNote(charCode) {
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(freq * 3, now);
 
-    // Gains for envelope
     const mainGain = audioCtx.createGain();
     const harm2Gain = audioCtx.createGain();
     const harm3Gain = audioCtx.createGain();
     const masterGain = audioCtx.createGain();
 
-    // ADSR-like envelope: fast attack, medium decay
     masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(0.06, now + 0.008); // attack
-    masterGain.gain.exponentialRampToValueAtTime(0.02, now + 0.08); // decay
-    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25); // release
+    masterGain.gain.linearRampToValueAtTime(0.06, now + 0.008);
+    masterGain.gain.exponentialRampToValueAtTime(0.02, now + 0.08);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
     mainGain.gain.value = 1.0;
     harm2Gain.gain.value = 0.3;
@@ -190,14 +217,17 @@ function playPianoNote(charCode) {
     osc.connect(mainGain);
     osc2.connect(harm2Gain);
     osc3.connect(harm3Gain);
+
     mainGain.connect(masterGain);
     harm2Gain.connect(masterGain);
     harm3Gain.connect(masterGain);
+
     masterGain.connect(audioCtx.destination);
 
     osc.start(now);
     osc2.start(now);
     osc3.start(now);
+
     osc.stop(now + 0.3);
     osc2.stop(now + 0.3);
     osc3.stop(now + 0.3);
@@ -206,17 +236,21 @@ function playPianoNote(charCode) {
 
 function playErrorNote() {
   if (!soundEnabled || !audioCtx) return;
+
   try {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(180 + Math.random() * 40, now);
+
     const gain = audioCtx.createGain();
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.04, now + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
     osc.connect(gain);
     gain.connect(audioCtx.destination);
+
     osc.start(now);
     osc.stop(now + 0.15);
   } catch (e) {}
@@ -225,6 +259,7 @@ function playErrorNote() {
 /* ── Sound Toggle ── */
 function updateSoundToggle() {
   const btn = $('#soundToggle');
+
   if (soundEnabled) {
     btn.classList.add('on');
     btn.textContent = '🎹 Sound on';
@@ -233,13 +268,16 @@ function updateSoundToggle() {
     btn.textContent = '🔇 Sound off';
   }
 }
+
 $('#soundToggle').onclick = () => {
   initAudio();
   soundEnabled = !soundEnabled;
   localStorage.setItem('ws-piano', soundEnabled ? 'on' : 'off');
   updateSoundToggle();
-  if (soundEnabled) playPianoNote(67); // preview note
+
+  if (soundEnabled) playPianoNote(67);
 };
+
 updateSoundToggle();
 
 /* ── Passage Selection ── */
@@ -248,8 +286,13 @@ function pickPassage() {
   const pool = PASSAGES[diff];
   const base = pool[Math.floor(Math.random() * pool.length)];
   const target = diff === 'Hard' ? 380 : 550;
+
   text = base;
-  while (text.length < target) text += ' ' + pool[Math.floor(Math.random() * pool.length)];
+
+  while (text.length < target) {
+    text += ' ' + pool[Math.floor(Math.random() * pool.length)];
+  }
+
   text = text.slice(0, target).trim();
 }
 
@@ -257,8 +300,10 @@ function pickPassage() {
 function renderText() {
   const chars = [...text];
   let html = '';
+
   for (let i = 0; i < chars.length; i++) {
     let cls = 'char';
+
     if (i < typed.length) {
       cls += typed[i] === chars[i] ? ' correct' : ' incorrect';
     } else if (i === typed.length) {
@@ -266,17 +311,23 @@ function renderText() {
     } else {
       cls += ' dimmed';
     }
-    const ch = chars[i] === ' ' ? '&nbsp;' : chars[i].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const ch = chars[i] === ' '
+      ? ' '
+      : chars[i].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
     html += `<span class="${cls}">${ch}</span>`;
   }
+
   $('#textDisplay').innerHTML = html;
 
-  // Auto-scroll: keep current character in view
   const currentEl = $('#textDisplay .current');
+
   if (currentEl) {
     const zone = $('#typingZone');
     const rect = currentEl.getBoundingClientRect();
     const zoneRect = zone.getBoundingClientRect();
+
     if (rect.bottom > zoneRect.bottom - 20) {
       zone.scrollTop += rect.bottom - zoneRect.bottom + 40;
     }
@@ -309,32 +360,36 @@ function tick() {
   secs--;
   $('#liveTime').textContent = formatTime(secs);
   updateMetrics();
+
   if (secs <= 0) endTest();
 }
 
 /* ── Start ── */
 function startTest() {
   if (started) return;
+
   initAudio();
   started = true;
   finished = false;
+
   $('#startOverlay').classList.add('hide');
   $('#resultsOverlay').classList.add('hide');
   $('#hiddenInput').focus();
+
   timer = setInterval(tick, 1000);
 }
 
 /* ── End ── */
 function endTest() {
   if (finished) return;
+
   finished = true;
   started = false;
   clearInterval(timer);
 
-  const { wpm, acc, errors, correctChars } = updateMetrics();
+  const { wpm, acc, errors } = updateMetrics();
   const rawCpm = Math.round(totalKeystrokes / (totalSecs / 60));
 
-  // Display results
   $('#finalWpm').textContent = wpm;
   $('#finalAcc').textContent = acc + '%';
   $('#finalRaw').textContent = rawCpm;
@@ -342,21 +397,25 @@ function endTest() {
   $('#finalChars').textContent = typed.length;
   $('#resultsOverlay').classList.remove('hide');
 
-  // Save to history
   const hist = JSON.parse(localStorage.ztHist || '[]');
   const miss = JSON.parse(localStorage.ztMiss || '{}');
+
   typed.forEach((c, i) => {
     if (c !== text[i]) {
       const missed = text[i] || '?';
       miss[missed] = (miss[missed] || 0) + 1;
     }
   });
+
   hist.unshift({
-    wpm, acc, err: errors,
+    wpm,
+    acc,
+    err: errors,
     date: new Date().toLocaleString(),
     difficulty: $('#difficulty').value,
     duration: totalSecs
   });
+
   localStorage.ztHist = JSON.stringify(hist.slice(0, 50));
   localStorage.ztMiss = JSON.stringify(miss);
 
@@ -367,12 +426,15 @@ function endTest() {
 /* ── Reset ── */
 function resetTest(newPassage) {
   clearInterval(timer);
+
   started = false;
   finished = false;
   totalSecs = secs = +$('#duration').value;
   typed = [];
   totalKeystrokes = 0;
+
   if (newPassage) pickPassage();
+
   $('#liveWpm').textContent = '0';
   $('#liveAcc').textContent = '100%';
   $('#liveErrors').textContent = '0';
@@ -380,6 +442,7 @@ function resetTest(newPassage) {
   $('#startOverlay').classList.remove('hide');
   $('#resultsOverlay').classList.add('hide');
   $('#typingZone').scrollTop = 0;
+
   renderText();
 }
 
@@ -390,20 +453,27 @@ $('#hiddenInput').addEventListener('input', e => {
 
 $('#hiddenInput').addEventListener('keydown', e => {
   if (finished) return;
-  if (e.key === 'Escape') { resetTest(false); return; }
+
+  if (e.key === 'Escape') {
+    resetTest(false);
+    return;
+  }
+
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-  // Start on first key
   if (!started && e.key.length === 1) {
     startTest();
   }
+
   if (!started) return;
 
   totalKeystrokes++;
 
   if (e.key === 'Backspace') {
     e.preventDefault();
+
     if (typed.length > 0) typed.pop();
+
     renderText();
     updateMetrics();
     return;
@@ -411,10 +481,10 @@ $('#hiddenInput').addEventListener('keydown', e => {
 
   if (e.key.length === 1) {
     e.preventDefault();
+
     const idx = typed.length;
     typed.push(e.key);
 
-    // Piano sound
     if (e.key === text[idx]) {
       playPianoNote(e.key.charCodeAt(0));
     } else {
@@ -424,21 +494,20 @@ $('#hiddenInput').addEventListener('keydown', e => {
     renderText();
     updateMetrics();
 
-    // End if text completed
     if (typed.length >= text.length) endTest();
   }
 });
 
-// Focus management
+/* ── Focus Management ── */
 $('#typingZone').addEventListener('click', () => {
   if (!finished) {
     initAudio();
     $('#hiddenInput').focus();
+
     if (!started) startTest();
   }
 });
 
-// Prevent losing focus
 $('#hiddenInput').addEventListener('blur', () => {
   if (started && !finished) {
     setTimeout(() => $('#hiddenInput').focus(), 10);
@@ -446,16 +515,24 @@ $('#hiddenInput').addEventListener('blur', () => {
 });
 
 /* ── Button Handlers ── */
-$('#startBtn').onclick = () => { resetTest(false); initAudio(); $('#hiddenInput').focus(); };
+$('#startBtn').onclick = () => {
+  resetTest(false);
+  initAudio();
+  $('#hiddenInput').focus();
+};
+
 $('#newBtn').onclick = () => resetTest(true);
 $('#retryBtn').onclick = () => resetTest(false);
 $('#newTestBtn').onclick = () => resetTest(true);
+
 $('#shareBtn').onclick = () => {
   const w = $('#finalWpm').textContent;
   const a = $('#finalAcc').textContent;
   const e = $('#finalErrors').textContent;
+
   WorkSuite.copyText(`ZenType result: ${w} WPM, ${a} accuracy, ${e} errors (${totalSecs}s ${$('#difficulty').value})`);
 };
+
 $('#duration').onchange = () => resetTest(false);
 $('#difficulty').onchange = () => resetTest(true);
 
@@ -470,30 +547,74 @@ $('#clearHist').onclick = () => {
 /* ── History ── */
 function renderHistory() {
   const hist = JSON.parse(localStorage.ztHist || '[]');
+
   $('#historyBody').innerHTML = hist.slice(0, 12).map((h, i) =>
-    `<tr><td>${i + 1}</td><td style="font-weight:700">${h.wpm}</td><td>${h.acc}%</td><td>${h.err}</td><td>${h.difficulty || '—'}</td><td style="color:var(--text-tertiary)">${h.date || '—'}</td></tr>`
+    `<tr>
+      <td>${i + 1}</td>
+      <td style="font-weight:700">${h.wpm}</td>
+      <td>${h.acc}%</td>
+      <td>${h.err}</td>
+      <td>${h.difficulty || '—'}</td>
+      <td style="color:var(--text-tertiary)">${h.date || '—'}</td>
+    </tr>`
   ).join('') || '<tr><td colspan="6" style="color:var(--text-tertiary)">No tests yet. Start typing to build your history.</td></tr>';
 
-  // Chart
   if (window._perfChart) window._perfChart.destroy();
+
   const recent = hist.slice(0, 12).reverse();
+
   if (recent.length > 1) {
-    const style = getComputedStyle(document.documentElement);
     window._perfChart = new Chart($('#chart'), {
       type: 'line',
       data: {
         labels: recent.map((_, i) => i + 1),
         datasets: [
-          { label: 'WPM', data: recent.map(h => h.wpm), borderColor: '#6246ea', backgroundColor: 'rgba(98,70,234,.1)', fill: true, tension: .4, pointRadius: 4 },
-          { label: 'Accuracy', data: recent.map(h => h.acc), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.05)', fill: true, tension: .4, pointRadius: 3 }
+          {
+            label: 'WPM',
+            data: recent.map(h => h.wpm),
+            borderColor: '#6246ea',
+            backgroundColor: 'rgba(98,70,234,.1)',
+            fill: true,
+            tension: .4,
+            pointRadius: 4
+          },
+          {
+            label: 'Accuracy',
+            data: recent.map(h => h.acc),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,.05)',
+            fill: true,
+            tension: .4,
+            pointRadius: 3
+          }
         ]
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 12 } } } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: {
+                size: 12
+              }
+            }
+          }
+        },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' } },
-          x: { grid: { display: false } }
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0,0,0,.05)'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
         }
       }
     });
@@ -505,16 +626,19 @@ function renderHeatmap() {
   const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
   const miss = JSON.parse(localStorage.ztMiss || '{}');
   const maxMiss = Math.max(1, ...Object.values(miss));
-  let y = 10, svg = '';
+  let y = 10;
+  let svg = '';
 
   rows.forEach((row, ri) => {
     [...row].forEach((k, i) => {
       const count = (miss[k.toLowerCase()] || 0) + (miss[k] || 0);
       const cls = count > maxMiss * 0.5 ? 'hot' : count > 0 ? 'warm' : '';
       const x = 20 + i * 66 + ri * 28;
+
       svg += `<rect class="heatkey ${cls}" x="${x}" y="${y}" width="56" height="42" rx="8"/>`;
       svg += `<text x="${x + 28}" y="${y + 26}" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600" font-family="var(--font)">${k}</text>`;
     });
+
     y += 56;
   });
 
