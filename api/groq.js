@@ -17,5 +17,7 @@ module.exports = async function handler(req, res) {
     const data = await r.json();
     const parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}');
     return res.status(200).json({ passage: String(parsed.passage || DEFAULT_PASSAGE).replace(/\s+/g,' ').trim(), tip: String(parsed.tip || 'Keep your rhythm steady and correct mistakes calmly.').replace(/\s+/g,' ').trim(), source:'groq' });
-  } catch (e) { return res.status(200).json({ passage: DEFAULT_PASSAGE, tip: `Fallback active: ${e.message}`, source:'fallback' }); }
+  } catch (e) {
+    return res.status(200).json({ passage: DEFAULT_PASSAGE, tip: `Fallback active: ${e.message}`, source:'fallback' });
+  }
 }
