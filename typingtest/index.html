@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenType - 5 Minute Typing Test</title>
+    <title>ZenType - AI Motivational Typing Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
@@ -55,19 +55,19 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4">
+    <div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4 transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl text-center border border-slate-100">
             <div class="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-lg shadow-blue-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <h2 class="text-4xl font-black text-slate-900 mb-2">ZenType</h2>
-            <p class="text-slate-500 mb-10 font-semibold tracking-tight">Enter your name to start the simple passage test</p>
+            <p class="text-slate-500 mb-8 font-semibold tracking-tight">Enter your name to start the AI passage test</p>
             
             <input type="text" id="employee-name-input" placeholder="Employee Full Name" 
                 class="w-full px-6 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-8 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-xl text-slate-800 transition-all text-center">
             
-            <button onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
-                Start Test
+            <button id="start-btn" onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
+                Start AI Test
             </button>
         </div>
     </div>
@@ -78,11 +78,16 @@
                 <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z"/></svg>
                 </div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">ZenType <span class="text-blue-600 font-bold text-sm tracking-widest ml-2 uppercase">Simple Mode</span></h1>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">ZenType <span class="text-blue-600 font-bold text-sm tracking-widest ml-2 uppercase">AI Mode</span></h1>
             </div>
             <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] ml-11"></p>
         </div>
         <div class="flex items-center gap-4">
+            <select id="time-selector" class="bg-white border-2 border-slate-200 text-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 block px-4 py-3 font-extrabold outline-none cursor-pointer transition-all shadow-sm">
+                <option value="60">1 Min</option>
+                <option value="180">3 Min</option>
+                <option value="300" selected>5 Min</option>
+            </select>
             <button id="sound-toggle" class="bg-white p-3 rounded-2xl shadow-md text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
                 <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
                 <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -93,7 +98,7 @@
 
     <main class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl shadow-slate-300/50 p-10 relative overflow-hidden border border-slate-100">
         
-        <div class="grid grid-cols-3 gap-8 mb-10">
+        <div class="grid grid-cols-3 gap-8 mb-8">
             <div class="stats-card bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 text-center">
                 <p class="text-[11px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words Per Minute</p>
                 <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
@@ -108,8 +113,10 @@
             </div>
         </div>
 
+        <div id="ai-tip" class="text-sm font-extrabold text-blue-600 mb-6 text-center tracking-[0.1em] uppercase hidden bg-blue-50 py-2 rounded-xl border border-blue-100"></div>
+
         <div id="text-container" class="mono text-3xl leading-[1.8] text-slate-400 select-none border-2 border-slate-50">
-            Initializing simple passage...
+            Initializing AI passage...
         </div>
 
         <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
@@ -118,7 +125,7 @@
             <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-4 shadow-xl shadow-blue-200 animate-pulse">
                 CLICK TO START
             </div>
-            <p class="text-slate-800 font-bold tracking-wide">Standard 5-minute English passage</p>
+            <p id="overlay-subtitle" class="text-slate-800 font-bold tracking-wide">AI Motivational English passage</p>
         </div>
     </main>
 
@@ -153,18 +160,18 @@
                 </div>
             </div>
 
-            <button onclick="resetTest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all flex items-center justify-center gap-4 text-xl shadow-2xl">
-                Retake Assessment
+            <button id="retake-btn" onclick="resetTest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all flex items-center justify-center gap-4 text-xl shadow-2xl">
+                Retake Assessment & Generate New Text
             </button>
         </div>
     </div>
 
     <script>
-        const TEST_DURATION = 300; 
-        const passages = [
-            "The journey of a thousand miles begins with a single step. Success is not about how much money you make, but the difference you make in people's lives. Believe you can and you're halfway there. It does not matter how slowly you go as long as you do not stop. Everything you've ever wanted is on the other side of fear. Hardships often prepare ordinary people for an extraordinary destiny. Dream big and dare to fail. Quality is not an act, it is a habit. The only way to do great work is to love what you do. If you can dream it, you can do it. Peace comes from within. Do not seek it without. What we think, we become. Life is ten percent what happens to us and ninety percent how we react to it. Your time is limited, so do not waste it living someone else's life. The future belongs to those who believe in the beauty of their dreams. Stay hungry, stay foolish. It is never too late to be what you might have been."
+        const FALLBACK_PASSAGES = [
+            "Every keystroke is a step toward your highest potential. Embrace the challenge of this moment, letting go of past mistakes and focusing purely on the steady rhythm of your progress. True mastery is built not in a single day, but through consistent, mindful dedication. Breathe deeply, trust your abilities, and type with purpose."
         ];
 
+        let TEST_DURATION = 300; 
         let employeeName = "";
         let timer = TEST_DURATION;
         let interval = null;
@@ -182,7 +189,6 @@
             if (!soundEnabled) return;
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Create a "tick" using a short burst of noise and a high-pitched pulse
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             
@@ -211,6 +217,17 @@
         const nameModal = document.getElementById('name-modal');
         const nameInput = document.getElementById('employee-name-input');
         const soundToggle = document.getElementById('sound-toggle');
+        const timeSelector = document.getElementById('time-selector');
+        const aiTip = document.getElementById('ai-tip');
+
+        // Update timer on select change
+        timeSelector.addEventListener('change', (e) => {
+            TEST_DURATION = parseInt(e.target.value);
+            if (!isRunning) {
+                timer = TEST_DURATION;
+                updateTimerDisplay();
+            }
+        });
 
         soundToggle.onclick = () => {
             soundEnabled = !soundEnabled;
@@ -221,7 +238,22 @@
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         };
 
-        function saveName() {
+        async function fetchAIPassage(wpm, acc) {
+            try {
+                const response = await fetch('/api/groq', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wpm, acc })
+                });
+                const data = await response.json();
+                return data;
+            } catch (e) {
+                console.error('AI passage fetch failed', e);
+                return { passage: FALLBACK_PASSAGES[0], tip: "Believe you can and you're halfway there." };
+            }
+        }
+
+        async function saveName() {
             const val = nameInput.value.trim();
             if (val.length < 2) {
                 nameInput.classList.add('border-rose-500');
@@ -230,14 +262,35 @@
             }
             employeeName = val;
             document.getElementById('header-name').innerText = `Typing: ${employeeName}`;
+            
+            const btn = document.getElementById('start-btn');
+            const origText = btn.innerText;
+            btn.innerText = 'Summoning AI...';
+            btn.disabled = true;
+
+            await initTest(true);
+            
+            btn.innerText = origText;
+            btn.disabled = false;
             nameModal.classList.add('hidden');
-            initTest();
         }
 
-        nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveName(); });
+        nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !document.getElementById('start-btn').disabled) saveName(); });
 
-        function initTest() {
-            currentPassage = passages[0];
+        async function initTest(isFirst = false) {
+            focusOverlay.classList.add('hidden');
+            aiTip.classList.add('hidden');
+            textContainer.innerHTML = '<div class="flex items-center justify-center h-full text-blue-500 font-bold animate-pulse text-xl tracking-wide">Generating custom motivational passage...</div>';
+            
+            const wpmToUse = isFirst ? 0 : calculateWPM();
+            const accToUse = isFirst ? 100 : calculateAccuracy();
+
+            const aiData = await fetchAIPassage(wpmToUse, accToUse);
+            currentPassage = aiData.passage;
+            
+            aiTip.innerText = `💡 AI Coach: "${aiData.tip}"`;
+            aiTip.classList.remove('hidden');
+
             textContainer.innerHTML = '';
             currentPassage.split('').forEach((char, i) => {
                 const span = document.createElement('span');
@@ -259,6 +312,7 @@
             textContainer.scrollTop = 0;
             
             typingInput.value = '';
+            timeSelector.disabled = false;
             resultsModal.classList.add('hidden');
             focusOverlay.classList.remove('hidden');
             focusOverlay.style.opacity = "1";
@@ -267,6 +321,7 @@
         function startTest() {
             if (isRunning) return;
             isRunning = true;
+            timeSelector.disabled = true; // Lock time selection
             focusOverlay.style.opacity = "0";
             setTimeout(() => focusOverlay.classList.add('hidden'), 500);
             
@@ -282,6 +337,7 @@
             clearInterval(interval);
             isRunning = false;
             typingInput.blur();
+            timeSelector.disabled = false;
             
             document.getElementById('result-employee-name').innerText = employeeName;
             document.getElementById('final-wpm').innerText = calculateWPM();
@@ -319,7 +375,6 @@
         typingInput.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
-                resetTest();
                 return;
             }
 
@@ -380,9 +435,17 @@
             container.scrollTo({ top: targetScroll, behavior: 'smooth' });
         }
 
-        function resetTest() {
+        async function resetTest() {
             clearInterval(interval);
-            initTest();
+            const btn = document.getElementById('retake-btn');
+            const origText = btn.innerText;
+            btn.innerText = 'Generating New AI Passage...';
+            btn.disabled = true;
+
+            await initTest(false);
+            
+            btn.innerText = origText;
+            btn.disabled = false;
             typingInput.focus();
         }
 
@@ -397,7 +460,10 @@
             }
         });
 
-        window.onload = () => nameInput.focus();
+        window.onload = () => {
+            nameInput.focus();
+            updateTimerDisplay(); // Ensures UI matches the default select value
+        };
     </script>
 </body>
 </html>
