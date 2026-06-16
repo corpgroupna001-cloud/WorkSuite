@@ -53,81 +53,106 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 pt-24">
+
+    <nav class="fixed top-0 left-0 w-full bg-white/70 backdrop-blur-lg border-b border-slate-200 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='../index.html'">
+                    <div class="bg-blue-600 p-1.5 rounded-lg text-white shadow-md shadow-blue-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <span class="font-black text-xl text-slate-900 tracking-tight">ZenType</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8 h-full">
+                    <a href="#" class="text-blue-600 font-bold border-b-2 border-blue-600 h-full flex items-center px-1">Practice</a>
+                    <a href="#" class="text-slate-500 hover:text-slate-900 font-semibold transition-colors h-full flex items-center px-1">Leaderboard</a>
+                    <a href="#" class="text-slate-500 hover:text-slate-900 font-semibold transition-colors h-full flex items-center px-1">History</a>
+                </div>
+
+                <div class="flex items-center gap-5">
+                    <button class="text-slate-400 hover:text-slate-700 transition-colors hidden sm:block">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <div id="nav-profile-avatar" class="h-9 w-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-black border-2 border-slate-200 shadow-sm cursor-pointer transition-all hover:border-blue-300 hover:text-blue-600">
+                        ?
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4 transition-opacity duration-300">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl text-center border border-slate-100">
-            <div class="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-lg shadow-blue-200">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl text-center border border-slate-100 relative overflow-hidden">
+            <div class="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-lg shadow-blue-200 relative z-10">
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <h2 class="text-4xl font-black text-slate-900 mb-2">ZenType</h2>
-            <p class="text-slate-500 mb-8 font-semibold tracking-tight">Enter your name to start the AI passage test</p>
+            <h2 class="text-4xl font-black text-slate-900 mb-2 relative z-10">Welcome</h2>
+            <p class="text-slate-500 mb-8 font-semibold tracking-tight relative z-10">Enter your name to access the dashboard</p>
             
-            <input type="text" id="employee-name-input" placeholder="Employee Full Name" 
-                class="w-full px-6 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-8 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-xl text-slate-800 transition-all text-center">
+            <input type="text" id="employee-name-input" placeholder="Your Full Name" 
+                class="w-full px-6 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-8 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-xl text-slate-800 transition-all text-center relative z-10">
             
-            <button id="start-btn" onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
+            <button id="start-btn" onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg relative z-10">
                 Start AI Test
             </button>
         </div>
     </div>
 
-    <header class="w-full max-w-4xl flex justify-between items-end mb-8 px-2">
-        <div>
-            <div class="flex items-center gap-3 mb-1">
-                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z"/></svg>
+    <div class="w-full max-w-4xl flex flex-col items-center z-10">
+        <header class="w-full flex justify-between items-end mb-8 px-2">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">AI Assessment</h1>
+                <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] mt-1"></p>
+            </div>
+            <div class="flex items-center gap-4">
+                <select id="time-selector" class="bg-white border-2 border-slate-200 text-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 block px-4 py-3 font-extrabold outline-none cursor-pointer transition-all shadow-sm">
+                    <option value="60">1 Min</option>
+                    <option value="180">3 Min</option>
+                    <option value="300" selected>5 Min</option>
+                </select>
+                <button id="sound-toggle" class="bg-white p-3 rounded-2xl shadow-md text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
+                    <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                    <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <div id="timer-display" class="bg-slate-900 text-white px-8 py-3 rounded-2xl mono text-2xl font-black tracking-tighter shadow-xl border-b-4 border-slate-700">05:00</div>
+            </div>
+        </header>
+
+        <main class="w-full bg-white rounded-[2rem] shadow-2xl shadow-slate-300/50 p-10 relative overflow-hidden border border-slate-100">
+            
+            <div class="grid grid-cols-3 gap-8 mb-8">
+                <div class="stats-card bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 text-center">
+                    <p class="text-[11px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words Per Minute</p>
+                    <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
                 </div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">ZenType <span class="text-blue-600 font-bold text-sm tracking-widest ml-2 uppercase">AI Mode</span></h1>
+                <div class="stats-card bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/50 text-center">
+                    <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-400 font-black mb-1">Accuracy</p>
+                    <p id="live-accuracy" class="text-5xl font-black text-emerald-600">100%</p>
+                </div>
+                <div class="stats-card bg-rose-50/50 p-5 rounded-2xl border border-rose-100/50 text-center">
+                    <p class="text-[11px] uppercase tracking-[0.3em] text-rose-400 font-black mb-1">Mistakes</p>
+                    <p id="live-errors" class="text-5xl font-black text-rose-600">0</p>
+                </div>
             </div>
-            <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] ml-11"></p>
-        </div>
-        <div class="flex items-center gap-4">
-            <select id="time-selector" class="bg-white border-2 border-slate-200 text-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 block px-4 py-3 font-extrabold outline-none cursor-pointer transition-all shadow-sm">
-                <option value="60">1 Min</option>
-                <option value="180">3 Min</option>
-                <option value="300" selected>5 Min</option>
-            </select>
-            <button id="sound-toggle" class="bg-white p-3 rounded-2xl shadow-md text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
-                <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-            </button>
-            <div id="timer-display" class="bg-slate-900 text-white px-8 py-3 rounded-2xl mono text-2xl font-black tracking-tighter shadow-xl border-b-4 border-slate-700">05:00</div>
-        </div>
-    </header>
 
-    <main class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl shadow-slate-300/50 p-10 relative overflow-hidden border border-slate-100">
-        
-        <div class="grid grid-cols-3 gap-8 mb-8">
-            <div class="stats-card bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words Per Minute</p>
-                <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
+            <div id="ai-tip" class="text-sm font-extrabold text-blue-600 mb-6 text-center tracking-[0.1em] uppercase hidden bg-blue-50 py-2 rounded-xl border border-blue-100"></div>
+
+            <div id="text-container" class="mono text-3xl leading-[1.8] text-slate-400 select-none border-2 border-slate-50">
+                Initializing AI passage...
             </div>
-            <div class="stats-card bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-400 font-black mb-1">Accuracy</p>
-                <p id="live-accuracy" class="text-5xl font-black text-emerald-600">100%</p>
+
+            <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
+
+            <div id="focus-overlay" class="absolute inset-0 bg-white/60 flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-500">
+                <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-4 shadow-xl shadow-blue-200 animate-pulse">
+                    CLICK TO START
+                </div>
+                <p id="overlay-subtitle" class="text-slate-800 font-bold tracking-wide">AI Motivational English passage</p>
             </div>
-            <div class="stats-card bg-rose-50/50 p-5 rounded-2xl border border-rose-100/50 text-center">
-                <p class="text-[11px] uppercase tracking-[0.3em] text-rose-400 font-black mb-1">Mistakes</p>
-                <p id="live-errors" class="text-5xl font-black text-rose-600">0</p>
-            </div>
-        </div>
-
-        <div id="ai-tip" class="text-sm font-extrabold text-blue-600 mb-6 text-center tracking-[0.1em] uppercase hidden bg-blue-50 py-2 rounded-xl border border-blue-100"></div>
-
-        <div id="text-container" class="mono text-3xl leading-[1.8] text-slate-400 select-none border-2 border-slate-50">
-            Initializing AI passage...
-        </div>
-
-        <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
-
-        <div id="focus-overlay" class="absolute inset-0 bg-white/60 flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-500">
-            <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-4 shadow-xl shadow-blue-200 animate-pulse">
-                CLICK TO START
-            </div>
-            <p id="overlay-subtitle" class="text-slate-800 font-bold tracking-wide">AI Motivational English passage</p>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <div id="results-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl transform transition-all duration-500 border border-white/20">
@@ -183,7 +208,6 @@
         let correctTyped = 0;
         let soundEnabled = true;
 
-        // Audio System for "Tick" sound
         let audioCtx = null;
         function playTickSound() {
             if (!soundEnabled) return;
@@ -216,17 +240,19 @@
         const resultsModal = document.getElementById('results-modal');
         const nameModal = document.getElementById('name-modal');
         const nameInput = document.getElementById('employee-name-input');
+        const navAvatar = document.getElementById('nav-profile-avatar');
         const soundToggle = document.getElementById('sound-toggle');
         const timeSelector = document.getElementById('time-selector');
         const aiTip = document.getElementById('ai-tip');
 
-        // Update timer on select change
         timeSelector.addEventListener('change', (e) => {
             TEST_DURATION = parseInt(e.target.value);
             if (!isRunning) {
                 timer = TEST_DURATION;
                 updateTimerDisplay();
             }
+            // Auto-focus back to the typing input so the user can start immediately
+            typingInput.focus();
         });
 
         soundToggle.onclick = () => {
@@ -261,7 +287,12 @@
                 return;
             }
             employeeName = val;
+            
+            // Update UI with the user's name
             document.getElementById('header-name').innerText = `Typing: ${employeeName}`;
+            navAvatar.innerText = employeeName.charAt(0).toUpperCase();
+            navAvatar.classList.add('bg-blue-100', 'text-blue-700', 'border-blue-200');
+            navAvatar.classList.remove('bg-slate-100', 'text-slate-400', 'border-slate-200');
             
             const btn = document.getElementById('start-btn');
             const origText = btn.innerText;
@@ -321,7 +352,7 @@
         function startTest() {
             if (isRunning) return;
             isRunning = true;
-            timeSelector.disabled = true; // Lock time selection
+            timeSelector.disabled = true;
             focusOverlay.style.opacity = "0";
             setTimeout(() => focusOverlay.classList.add('hidden'), 500);
             
@@ -454,7 +485,12 @@
             typingInput.focus();
         });
 
-        document.addEventListener('click', () => {
+        // FIX APPLIED HERE
+        document.addEventListener('click', (e) => {
+            // Do not steal focus back if the user is trying to click a button, select, or link
+            if (e.target.closest('button, select, a, input:not(#typing-input)')) {
+                return; 
+            }
             if (resultsModal.classList.contains('hidden') && nameModal.classList.contains('hidden')) {
                 typingInput.focus();
             }
@@ -462,7 +498,7 @@
 
         window.onload = () => {
             nameInput.focus();
-            updateTimerDisplay(); // Ensures UI matches the default select value
+            updateTimerDisplay();
         };
     </script>
 </body>
