@@ -1,655 +1,403 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ZenType — Typing Test | WorkSuite</title>
-  <link rel="stylesheet" href="../assets/styles.css">
-  <script src="../assets/app.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
-  <style>
-    .typing-zone {
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    #textDisplay {
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-      word-break: normal;
-      line-height: 1.8;
-    }
-
-    #textDisplay .char {
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-<body>
-<nav class="nav"><div class="wrap navin">
-  <a class="logo" href="../"><span class="mark">⌨</span><span>ZenType</span></a>
-  <div class="links">
-    <a href="../">Home</a><a href="../FocusFlow/">Focus</a>
-    <button class="btn sm ghost" onclick="_openCmd()" style="font-family:var(--mono)">⌘K</button>
-    <button class="theme-toggle" data-theme-toggle>🌙</button>
-  </div>
-</div></nav>
-
-<main class="wrap section">
-
-  <!-- Config Bar -->
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-    <select id="duration" class="btn" style="width:auto;border-radius:var(--radius-full)">
-      <option value="30">30 seconds</option>
-      <option value="60" selected>1 minute</option>
-      <option value="120">2 minutes</option>
-      <option value="300">5 minutes</option>
-    </select>
-    <select id="difficulty" class="btn" style="width:auto;border-radius:var(--radius-full)">
-      <option>Easy</option>
-      <option selected>Medium</option>
-      <option>Hard</option>
-    </select>
-    <button class="sound-toggle" id="soundToggle" title="Toggle piano sounds">🎹 Sound</button>
-    <div style="margin-left:auto;display:flex;gap:6px">
-      <button class="btn primary" id="startBtn">Start test</button>
-      <button class="btn" id="newBtn">New passage</button>
-    </div>
-  </div>
-
-  <!-- Live Metrics -->
-  <div class="typing-meter" id="metrics">
-    <div><span class="meter-val brand" id="liveWpm">0</span>WPM</div>
-    <div><span class="meter-val" id="liveAcc">100%</span>Accuracy</div>
-    <div><span class="meter-val" id="liveErrors">0</span>Errors</div>
-    <div><span class="meter-val" id="liveTime">1:00</span>Remaining</div>
-  </div>
-
-  <!-- Typing Zone -->
-  <div class="typing-zone" id="typingZone" tabindex="0">
-    <div id="textDisplay"></div>
-    <input class="typing-hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-
-    <!-- Start Overlay -->
-    <div class="typing-overlay" id="startOverlay">
-      <div style="text-align:center">
-        <h2>Ready to type?</h2>
-        <p class="section-sub">Click here or press any key to begin</p>
-      </div>
-    </div>
-
-    <!-- Results Overlay -->
-    <div class="typing-overlay hide" id="resultsOverlay">
-      <div class="results-card" style="width:min(440px,85vw)">
-        <p style="font-size:13px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Your speed</p>
-        <div class="big-wpm" id="finalWpm">0</div>
-        <p style="font-size:13px;color:var(--text-tertiary)">words per minute</p>
-        <div class="stat-grid cols-4 mt" style="text-align:center">
-          <div class="stat"><b id="finalAcc">0%</b><span>Accuracy</span></div>
-          <div class="stat"><b id="finalRaw">0</b><span>Raw CPM</span></div>
-          <div class="stat"><b id="finalErrors">0</b><span>Errors</span></div>
-          <div class="stat"><b id="finalChars">0</b><span>Characters</span></div>
-        </div>
-        <div class="actions mt" style="justify-content:center">
-          <button class="btn primary" id="retryBtn">Try again</button>
-          <button class="btn" id="newTestBtn">New test</button>
-          <button class="btn" id="shareBtn">Copy result</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- History Section -->
-  <section class="section">
-    <h2 class="section-title">History</h2>
-    <canvas id="chart" height="90"></canvas>
-    <table class="table mt">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>WPM</th>
-          <th>Accuracy</th>
-          <th>Errors</th>
-          <th>Mode</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="historyBody"></tbody>
-    </table>
-    <div class="toolbar mt">
-      <button class="btn sm" id="clearHist">Clear history</button>
-    </div>
-
-    <h2 class="section-title mt" style="margin-top:28px">Keyboard heatmap</h2>
-    <p class="section-sub mb">Keys you miss most appear warmer.</p>
-    <svg id="heatSvg" viewBox="0 0 760 180" style="width:100%;max-width:860px"></svg>
-  </section>
-
-</main>
-
-<script>
-/* ══════════════════════════════════════════════════
-   ZenType v3 — Premium Typing Test Engine
-   ══════════════════════════════════════════════════ */
-
-const $ = s => document.querySelector(s);
-
-/* ── Passage Banks ── */
-const PASSAGES = {
-  Easy: [
-    'The morning light spread across the valley as birds began their songs. A gentle wind carried the scent of fresh grass and wildflowers over the quiet hills. The river moved slowly, reflecting the blue sky like a mirror made of water and light.',
-    'Reading a good book is one of the simplest pleasures in life. Each page turns into a new world filled with ideas and stories that stay with you long after you close the cover. Make time to read every day.',
-    'Learning to type well takes patience and steady practice. Start by focusing on accuracy rather than speed. As your fingers learn the positions of each key, speed will follow naturally. Stay relaxed and let rhythm guide you.',
-    'A cup of warm tea on a cold afternoon can turn any day around. There is something deeply calming about holding a warm mug and watching the steam rise. Simple moments like these deserve our full attention.'
-  ],
-  Medium: [
-    'Effective productivity comes from knowing when to focus deeply and when to step back and recharge. The most successful people are not those who work the longest hours, but those who protect their energy and direct it toward meaningful work with clear intention.',
-    'Software development is as much about communication as it is about code. Writing clear documentation, choosing descriptive variable names, and breaking complex logic into smaller functions are all acts of empathy toward the next person who reads your work.',
-    'The global economy runs on interconnected systems that respond to policy decisions, technological shifts, and collective human behavior. Understanding these dynamics requires looking beyond headlines and examining the underlying data with a critical eye.',
-    'Design is not just how something looks but how it works. Every pixel, every interaction, every word should serve the person using it. Great design disappears into the experience, leaving only the feeling that everything works exactly as expected.'
-  ],
-  Hard: [
-    'const handleRequest = async (req, res) => { const { userId } = req.params; try { const user = await db.query(`SELECT * FROM users WHERE id = $1`, [userId]); if (!user.rows.length) return res.status(404).json({ error: "Not found" }); return res.json({ data: user.rows[0] }); } catch (err) { return res.status(500).json({ error: err.message }); } };',
-    'SELECT u.name, COUNT(o.id) AS order_count, SUM(o.total) AS revenue, AVG(o.total) AS avg_order FROM users u INNER JOIN orders o ON u.id = o.user_id WHERE o.created_at >= \'2024-01-01\' GROUP BY u.name HAVING COUNT(o.id) > 5 ORDER BY revenue DESC LIMIT 25;',
-    'The Heisenberg uncertainty principle states that position (x) and momentum (p) cannot both be known precisely: delta_x * delta_p >= h_bar / 2. This fundamental limit constrains measurement at quantum scales and leads to phenomena like tunneling (probability ~= e^{-2*kappa*L}).',
-    'docker compose -f docker-compose.prod.yml up -d --build && curl -sSf https://api.example.com/health | jq ".status" && echo "Deploy successful at $(date +%Y-%m-%dT%H:%M:%S)" >> /var/log/deploy.log || { echo "FAILED"; exit 1; }'
-  ]
-};
-
-/* ── State ── */
-let text = '';
-let typed = [];
-let started = false;
-let finished = false;
-let secs = 60;
-let totalSecs = 60;
-let timer = null;
-let totalKeystrokes = 0;
-let soundEnabled = localStorage.getItem('ws-piano') !== 'off';
-
-/* ── Piano Sound Engine (Web Audio API) ── */
-let audioCtx = null;
-const NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
-
-function initAudio() {
-  if (audioCtx) return;
-
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch (e) {}
-}
-
-function playPianoNote(charCode) {
-  if (!soundEnabled || !audioCtx) return;
-
-  try {
-    const noteIdx = (charCode || 65) % NOTES.length;
-    const freq = NOTES[noteIdx] * (0.97 + Math.random() * 0.06);
-    const now = audioCtx.currentTime;
-
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq * 2, now);
-
-    const osc3 = audioCtx.createOscillator();
-    osc3.type = 'sine';
-    osc3.frequency.setValueAtTime(freq * 3, now);
-
-    const mainGain = audioCtx.createGain();
-    const harm2Gain = audioCtx.createGain();
-    const harm3Gain = audioCtx.createGain();
-    const masterGain = audioCtx.createGain();
-
-    masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(0.06, now + 0.008);
-    masterGain.gain.exponentialRampToValueAtTime(0.02, now + 0.08);
-    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
-    mainGain.gain.value = 1.0;
-    harm2Gain.gain.value = 0.3;
-    harm3Gain.gain.value = 0.1;
-
-    osc.connect(mainGain);
-    osc2.connect(harm2Gain);
-    osc3.connect(harm3Gain);
-
-    mainGain.connect(masterGain);
-    harm2Gain.connect(masterGain);
-    harm3Gain.connect(masterGain);
-
-    masterGain.connect(audioCtx.destination);
-
-    osc.start(now);
-    osc2.start(now);
-    osc3.start(now);
-
-    osc.stop(now + 0.3);
-    osc2.stop(now + 0.3);
-    osc3.stop(now + 0.3);
-  } catch (e) {}
-}
-
-function playErrorNote() {
-  if (!soundEnabled || !audioCtx) return;
-
-  try {
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(180 + Math.random() * 40, now);
-
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.04, now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.15);
-  } catch (e) {}
-}
-
-/* ── Sound Toggle ── */
-function updateSoundToggle() {
-  const btn = $('#soundToggle');
-
-  if (soundEnabled) {
-    btn.classList.add('on');
-    btn.textContent = '🎹 Sound on';
-  } else {
-    btn.classList.remove('on');
-    btn.textContent = '🔇 Sound off';
-  }
-}
-
-$('#soundToggle').onclick = () => {
-  initAudio();
-  soundEnabled = !soundEnabled;
-  localStorage.setItem('ws-piano', soundEnabled ? 'on' : 'off');
-  updateSoundToggle();
-
-  if (soundEnabled) playPianoNote(67);
-};
-
-updateSoundToggle();
-
-/* ── Passage Selection ── */
-function pickPassage() {
-  const diff = $('#difficulty').value;
-  const pool = PASSAGES[diff];
-  const base = pool[Math.floor(Math.random() * pool.length)];
-  const target = diff === 'Hard' ? 380 : 550;
-
-  text = base;
-
-  while (text.length < target) {
-    text += ' ' + pool[Math.floor(Math.random() * pool.length)];
-  }
-
-  text = text.slice(0, target).trim();
-}
-
-/* ── Render ── */
-function renderText() {
-  const chars = [...text];
-  let html = '';
-
-  for (let i = 0; i < chars.length; i++) {
-    let cls = 'char';
-
-    if (i < typed.length) {
-      cls += typed[i] === chars[i] ? ' correct' : ' incorrect';
-    } else if (i === typed.length) {
-      cls += ' current';
-    } else {
-      cls += ' dimmed';
-    }
-
-    const ch = chars[i] === ' '
-      ? ' '
-      : chars[i].replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    html += `<span class="${cls}">${ch}</span>`;
-  }
-
-  $('#textDisplay').innerHTML = html;
-
-  const currentEl = $('#textDisplay .current');
-
-  if (currentEl) {
-    const zone = $('#typingZone');
-    const rect = currentEl.getBoundingClientRect();
-    const zoneRect = zone.getBoundingClientRect();
-
-    if (rect.bottom > zoneRect.bottom - 20) {
-      zone.scrollTop += rect.bottom - zoneRect.bottom + 40;
-    }
-  }
-}
-
-/* ── Metrics ── */
-function updateMetrics() {
-  const elapsed = totalSecs - secs;
-  const mins = elapsed / 60 || 1 / 60;
-  const correctChars = typed.filter((c, i) => c === text[i]).length;
-  const words = correctChars / 5;
-  const wpm = Math.round(words / mins);
-  const acc = typed.length ? Math.max(0, Math.round((correctChars / typed.length) * 100)) : 100;
-  const errors = typed.filter((c, i) => c !== text[i]).length;
-
-  $('#liveWpm').textContent = wpm;
-  $('#liveAcc').textContent = acc + '%';
-  $('#liveErrors').textContent = errors;
-
-  return { wpm, acc, errors, correctChars };
-}
-
-function formatTime(s) {
-  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-}
-
-/* ── Timer ── */
-function tick() {
-  secs--;
-  $('#liveTime').textContent = formatTime(secs);
-  updateMetrics();
-
-  if (secs <= 0) endTest();
-}
-
-/* ── Start ── */
-function startTest() {
-  if (started) return;
-
-  initAudio();
-  started = true;
-  finished = false;
-
-  $('#startOverlay').classList.add('hide');
-  $('#resultsOverlay').classList.add('hide');
-  $('#hiddenInput').focus();
-
-  timer = setInterval(tick, 1000);
-}
-
-/* ── End ── */
-function endTest() {
-  if (finished) return;
-
-  finished = true;
-  started = false;
-  clearInterval(timer);
-
-  const { wpm, acc, errors } = updateMetrics();
-  const rawCpm = Math.round(totalKeystrokes / (totalSecs / 60));
-
-  $('#finalWpm').textContent = wpm;
-  $('#finalAcc').textContent = acc + '%';
-  $('#finalRaw').textContent = rawCpm;
-  $('#finalErrors').textContent = errors;
-  $('#finalChars').textContent = typed.length;
-  $('#resultsOverlay').classList.remove('hide');
-
-  const hist = JSON.parse(localStorage.ztHist || '[]');
-  const miss = JSON.parse(localStorage.ztMiss || '{}');
-
-  typed.forEach((c, i) => {
-    if (c !== text[i]) {
-      const missed = text[i] || '?';
-      miss[missed] = (miss[missed] || 0) + 1;
-    }
-  });
-
-  hist.unshift({
-    wpm,
-    acc,
-    err: errors,
-    date: new Date().toLocaleString(),
-    difficulty: $('#difficulty').value,
-    duration: totalSecs
-  });
-
-  localStorage.ztHist = JSON.stringify(hist.slice(0, 50));
-  localStorage.ztMiss = JSON.stringify(miss);
-
-  renderHistory();
-  renderHeatmap();
-}
-
-/* ── Reset ── */
-function resetTest(newPassage) {
-  clearInterval(timer);
-
-  started = false;
-  finished = false;
-  totalSecs = secs = +$('#duration').value;
-  typed = [];
-  totalKeystrokes = 0;
-
-  if (newPassage) pickPassage();
-
-  $('#liveWpm').textContent = '0';
-  $('#liveAcc').textContent = '100%';
-  $('#liveErrors').textContent = '0';
-  $('#liveTime').textContent = formatTime(secs);
-  $('#startOverlay').classList.remove('hide');
-  $('#resultsOverlay').classList.add('hide');
-  $('#typingZone').scrollTop = 0;
-
-  renderText();
-}
-
-/* ── Input Handling ── */
-$('#hiddenInput').addEventListener('input', e => {
-  e.preventDefault();
-});
-
-$('#hiddenInput').addEventListener('keydown', e => {
-  if (finished) return;
-
-  if (e.key === 'Escape') {
-    resetTest(false);
-    return;
-  }
-
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-  if (!started && e.key.length === 1) {
-    startTest();
-  }
-
-  if (!started) return;
-
-  totalKeystrokes++;
-
-  if (e.key === 'Backspace') {
-    e.preventDefault();
-
-    if (typed.length > 0) typed.pop();
-
-    renderText();
-    updateMetrics();
-    return;
-  }
-
-  if (e.key.length === 1) {
-    e.preventDefault();
-
-    const idx = typed.length;
-    typed.push(e.key);
-
-    if (e.key === text[idx]) {
-      playPianoNote(e.key.charCodeAt(0));
-    } else {
-      playErrorNote();
-    }
-
-    renderText();
-    updateMetrics();
-
-    if (typed.length >= text.length) endTest();
-  }
-});
-
-/* ── Focus Management ── */
-$('#typingZone').addEventListener('click', () => {
-  if (!finished) {
-    initAudio();
-    $('#hiddenInput').focus();
-
-    if (!started) startTest();
-  }
-});
-
-$('#hiddenInput').addEventListener('blur', () => {
-  if (started && !finished) {
-    setTimeout(() => $('#hiddenInput').focus(), 10);
-  }
-});
-
-/* ── Button Handlers ── */
-$('#startBtn').onclick = () => {
-  resetTest(false);
-  initAudio();
-  $('#hiddenInput').focus();
-};
-
-$('#newBtn').onclick = () => resetTest(true);
-$('#retryBtn').onclick = () => resetTest(false);
-$('#newTestBtn').onclick = () => resetTest(true);
-
-$('#shareBtn').onclick = () => {
-  const w = $('#finalWpm').textContent;
-  const a = $('#finalAcc').textContent;
-  const e = $('#finalErrors').textContent;
-
-  WorkSuite.copyText(`ZenType result: ${w} WPM, ${a} accuracy, ${e} errors (${totalSecs}s ${$('#difficulty').value})`);
-};
-
-$('#duration').onchange = () => resetTest(false);
-$('#difficulty').onchange = () => resetTest(true);
-
-$('#clearHist').onclick = () => {
-  localStorage.removeItem('ztHist');
-  localStorage.removeItem('ztMiss');
-  renderHistory();
-  renderHeatmap();
-  WorkSuite.toast('History cleared');
-};
-
-/* ── History ── */
-function renderHistory() {
-  const hist = JSON.parse(localStorage.ztHist || '[]');
-
-  $('#historyBody').innerHTML = hist.slice(0, 12).map((h, i) =>
-    `<tr>
-      <td>${i + 1}</td>
-      <td style="font-weight:700">${h.wpm}</td>
-      <td>${h.acc}%</td>
-      <td>${h.err}</td>
-      <td>${h.difficulty || '—'}</td>
-      <td style="color:var(--text-tertiary)">${h.date || '—'}</td>
-    </tr>`
-  ).join('') || '<tr><td colspan="6" style="color:var(--text-tertiary)">No tests yet. Start typing to build your history.</td></tr>';
-
-  if (window._perfChart) window._perfChart.destroy();
-
-  const recent = hist.slice(0, 12).reverse();
-
-  if (recent.length > 1) {
-    window._perfChart = new Chart($('#chart'), {
-      type: 'line',
-      data: {
-        labels: recent.map((_, i) => i + 1),
-        datasets: [
-          {
-            label: 'WPM',
-            data: recent.map(h => h.wpm),
-            borderColor: '#6246ea',
-            backgroundColor: 'rgba(98,70,234,.1)',
-            fill: true,
-            tension: .4,
-            pointRadius: 4
-          },
-          {
-            label: 'Accuracy',
-            data: recent.map(h => h.acc),
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16,185,129,.05)',
-            fill: true,
-            tension: .4,
-            pointRadius: 3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              font: {
-                size: 12
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,.05)'
-            }
-          },
-          x: {
-            grid: {
-              display: false
-            }
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenType - 5 Minute Typing Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;800&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            overflow-x: hidden;
         }
-      }
-    });
-  }
-}
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #text-container {
+            height: 200px; 
+            overflow-y: hidden;
+            position: relative;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 1.5rem;
+        }
+        .char {
+            position: relative;
+            display: inline-block;
+            border-bottom: 3px solid transparent;
+            transition: all 0.05s ease;
+            white-space: pre;
+            padding: 0 1px;
+        }
+        .char.current {
+            background-color: #dbeafe;
+            border-bottom: 3px solid #2563eb;
+            border-radius: 4px;
+            color: #1e293b;
+        }
+        .char.correct {
+            color: #059669;
+        }
+        .char.incorrect {
+            color: #ffffff;
+            background-color: #e11d48;
+            border-radius: 4px;
+        }
+        .stats-card {
+            transition: all 0.2s ease;
+        }
+        #text-container::-webkit-scrollbar {
+            width: 0px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-/* ── Heatmap ── */
-function renderHeatmap() {
-  const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-  const miss = JSON.parse(localStorage.ztMiss || '{}');
-  const maxMiss = Math.max(1, ...Object.values(miss));
-  let y = 10;
-  let svg = '';
+    <div id="name-modal" class="fixed inset-0 bg-slate-900 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-12 shadow-2xl text-center border border-slate-100">
+            <div class="bg-blue-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-lg shadow-blue-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h2 class="text-4xl font-black text-slate-900 mb-2">ZenType</h2>
+            <p class="text-slate-500 mb-10 font-semibold tracking-tight">Enter your name to start the simple passage test</p>
+            
+            <input type="text" id="employee-name-input" placeholder="Employee Full Name" 
+                class="w-full px-6 py-5 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-8 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 focus:outline-none font-bold text-xl text-slate-800 transition-all text-center">
+            
+            <button onclick="saveName()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-5 rounded-2xl shadow-xl shadow-blue-200 transition-all transform hover:scale-[1.02] active:scale-95 text-lg">
+                Start Test
+            </button>
+        </div>
+    </div>
 
-  rows.forEach((row, ri) => {
-    [...row].forEach((k, i) => {
-      const count = (miss[k.toLowerCase()] || 0) + (miss[k] || 0);
-      const cls = count > maxMiss * 0.5 ? 'hot' : count > 0 ? 'warm' : '';
-      const x = 20 + i * 66 + ri * 28;
+    <header class="w-full max-w-4xl flex justify-between items-end mb-8 px-2">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z"/></svg>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">ZenType <span class="text-blue-600 font-bold text-sm tracking-widest ml-2 uppercase">Simple Mode</span></h1>
+            </div>
+            <p id="header-name" class="text-slate-400 font-bold text-xs uppercase tracking-[0.25em] ml-11"></p>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="sound-toggle" class="bg-white p-3 rounded-2xl shadow-md text-slate-400 hover:text-blue-600 transition-colors border border-slate-100">
+                <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                <svg id="sound-off-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            </button>
+            <div id="timer-display" class="bg-slate-900 text-white px-8 py-3 rounded-2xl mono text-2xl font-black tracking-tighter shadow-xl border-b-4 border-slate-700">05:00</div>
+        </div>
+    </header>
 
-      svg += `<rect class="heatkey ${cls}" x="${x}" y="${y}" width="56" height="42" rx="8"/>`;
-      svg += `<text x="${x + 28}" y="${y + 26}" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600" font-family="var(--font)">${k}</text>`;
-    });
+    <main class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl shadow-slate-300/50 p-10 relative overflow-hidden border border-slate-100">
+        
+        <div class="grid grid-cols-3 gap-8 mb-10">
+            <div class="stats-card bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 text-center">
+                <p class="text-[11px] uppercase tracking-[0.3em] text-blue-400 font-black mb-1">Words Per Minute</p>
+                <p id="live-wpm" class="text-5xl font-black text-blue-700">0</p>
+            </div>
+            <div class="stats-card bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/50 text-center">
+                <p class="text-[11px] uppercase tracking-[0.3em] text-emerald-400 font-black mb-1">Accuracy</p>
+                <p id="live-accuracy" class="text-5xl font-black text-emerald-600">100%</p>
+            </div>
+            <div class="stats-card bg-rose-50/50 p-5 rounded-2xl border border-rose-100/50 text-center">
+                <p class="text-[11px] uppercase tracking-[0.3em] text-rose-400 font-black mb-1">Mistakes</p>
+                <p id="live-errors" class="text-5xl font-black text-rose-600">0</p>
+            </div>
+        </div>
 
-    y += 56;
-  });
+        <div id="text-container" class="mono text-3xl leading-[1.8] text-slate-400 select-none border-2 border-slate-50">
+            Initializing simple passage...
+        </div>
 
-  $('#heatSvg').innerHTML = svg;
-}
+        <input type="text" id="typing-input" class="fixed -top-full opacity-0" autocomplete="off">
 
-/* ── Init ── */
-pickPassage();
-resetTest(false);
-renderHistory();
-renderHeatmap();
-</script>
+        <div id="focus-overlay" class="absolute inset-0 bg-white/60 flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-500">
+            <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl text-lg font-black mb-4 shadow-xl shadow-blue-200 animate-pulse">
+                CLICK TO START
+            </div>
+            <p class="text-slate-800 font-bold tracking-wide">Standard 5-minute English passage</p>
+        </div>
+    </main>
+
+    <div id="results-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl transform transition-all duration-500 border border-white/20">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                </div>
+                <h2 class="text-5xl font-black text-slate-900 mb-2">Test Complete</h2>
+                <div class="h-1 w-24 bg-blue-600 mx-auto mb-6 rounded-full"></div>
+                <p id="result-employee-name" class="text-blue-600 font-black text-2xl uppercase tracking-[0.2em] mb-1"></p>
+                <p class="text-slate-400 font-bold text-sm uppercase">Typing Speed Assessment Report</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 mb-12">
+                <div class="p-10 bg-slate-900 rounded-[2rem] text-center text-white shadow-2xl">
+                    <p class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Words Per Minute</p>
+                    <p id="final-wpm" class="text-7xl font-black text-blue-400">0</p>
+                </div>
+                <div class="p-10 bg-emerald-600 rounded-[2rem] text-center text-white shadow-2xl">
+                    <p class="text-xs font-black uppercase tracking-[0.3em] text-emerald-200 mb-3">Net Accuracy</p>
+                    <p id="final-accuracy" class="text-7xl font-black">0%</p>
+                </div>
+                <div class="p-8 bg-slate-50 rounded-3xl text-center border-2 border-slate-100">
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Keystrokes</p>
+                    <p id="final-keys" class="text-3xl font-black text-slate-800">0</p>
+                </div>
+                <div class="p-8 bg-slate-50 rounded-3xl text-center border-2 border-slate-100">
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Errors</p>
+                    <p id="final-errors" class="text-3xl font-black text-rose-600">0</p>
+                </div>
+            </div>
+
+            <button onclick="resetTest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl transition-all flex items-center justify-center gap-4 text-xl shadow-2xl">
+                Retake Assessment
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const TEST_DURATION = 300; 
+        const passages = [
+            "The journey of a thousand miles begins with a single step. Success is not about how much money you make, but the difference you make in people's lives. Believe you can and you're halfway there. It does not matter how slowly you go as long as you do not stop. Everything you've ever wanted is on the other side of fear. Hardships often prepare ordinary people for an extraordinary destiny. Dream big and dare to fail. Quality is not an act, it is a habit. The only way to do great work is to love what you do. If you can dream it, you can do it. Peace comes from within. Do not seek it without. What we think, we become. Life is ten percent what happens to us and ninety percent how we react to it. Your time is limited, so do not waste it living someone else's life. The future belongs to those who believe in the beauty of their dreams. Stay hungry, stay foolish. It is never too late to be what you might have been."
+        ];
+
+        let employeeName = "";
+        let timer = TEST_DURATION;
+        let interval = null;
+        let isRunning = false;
+        let currentPassage = "";
+        let currentIndex = 0;
+        let errors = 0;
+        let totalTyped = 0;
+        let correctTyped = 0;
+        let soundEnabled = true;
+
+        // Audio System for "Tick" sound
+        let audioCtx = null;
+        function playTickSound() {
+            if (!soundEnabled) return;
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create a "tick" using a short burst of noise and a high-pitched pulse
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.02);
+            
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.02);
+        }
+
+        const textContainer = document.getElementById('text-container');
+        const typingInput = document.getElementById('typing-input');
+        const timerDisplay = document.getElementById('timer-display');
+        const liveWpm = document.getElementById('live-wpm');
+        const liveAccuracy = document.getElementById('live-accuracy');
+        const liveErrors = document.getElementById('live-errors');
+        const focusOverlay = document.getElementById('focus-overlay');
+        const resultsModal = document.getElementById('results-modal');
+        const nameModal = document.getElementById('name-modal');
+        const nameInput = document.getElementById('employee-name-input');
+        const soundToggle = document.getElementById('sound-toggle');
+
+        soundToggle.onclick = () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-on-icon').classList.toggle('hidden');
+            document.getElementById('sound-off-icon').classList.toggle('hidden');
+            soundToggle.classList.toggle('text-blue-600');
+            soundToggle.classList.toggle('text-slate-400');
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        function saveName() {
+            const val = nameInput.value.trim();
+            if (val.length < 2) {
+                nameInput.classList.add('border-rose-500');
+                setTimeout(() => nameInput.classList.remove('border-rose-500'), 500);
+                return;
+            }
+            employeeName = val;
+            document.getElementById('header-name').innerText = `Typing: ${employeeName}`;
+            nameModal.classList.add('hidden');
+            initTest();
+        }
+
+        nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveName(); });
+
+        function initTest() {
+            currentPassage = passages[0];
+            textContainer.innerHTML = '';
+            currentPassage.split('').forEach((char, i) => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.classList.add('char');
+                if (i === 0) span.classList.add('current');
+                textContainer.appendChild(span);
+            });
+            
+            currentIndex = 0;
+            errors = 0;
+            totalTyped = 0;
+            correctTyped = 0;
+            timer = TEST_DURATION;
+            isRunning = false;
+            
+            updateStats();
+            updateTimerDisplay();
+            textContainer.scrollTop = 0;
+            
+            typingInput.value = '';
+            resultsModal.classList.add('hidden');
+            focusOverlay.classList.remove('hidden');
+            focusOverlay.style.opacity = "1";
+        }
+
+        function startTest() {
+            if (isRunning) return;
+            isRunning = true;
+            focusOverlay.style.opacity = "0";
+            setTimeout(() => focusOverlay.classList.add('hidden'), 500);
+            
+            interval = setInterval(() => {
+                timer--;
+                updateTimerDisplay();
+                updateStats();
+                if (timer <= 0) endTest();
+            }, 1000);
+        }
+
+        function endTest() {
+            clearInterval(interval);
+            isRunning = false;
+            typingInput.blur();
+            
+            document.getElementById('result-employee-name').innerText = employeeName;
+            document.getElementById('final-wpm').innerText = calculateWPM();
+            document.getElementById('final-accuracy').innerText = calculateAccuracy() + '%';
+            document.getElementById('final-keys').innerText = totalTyped;
+            document.getElementById('final-errors').innerText = errors;
+            
+            resultsModal.classList.remove('hidden');
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timer / 60);
+            const secs = timer % 60;
+            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function calculateWPM() {
+            const timeElapsedInMinutes = (TEST_DURATION - timer) / 60;
+            if (timeElapsedInMinutes <= 0) return 0;
+            const wpm = Math.round((correctTyped / 5) / timeElapsedInMinutes);
+            return Math.max(0, wpm);
+        }
+
+        function calculateAccuracy() {
+            if (totalTyped === 0) return 100;
+            return Math.round((correctTyped / totalTyped) * 100);
+        }
+
+        function updateStats() {
+            liveWpm.innerText = calculateWPM();
+            liveAccuracy.innerText = calculateAccuracy() + '%';
+            liveErrors.innerText = errors;
+        }
+
+        typingInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                resetTest();
+                return;
+            }
+
+            if (timer <= 0) return;
+            
+            if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ') {
+                playTickSound();
+            }
+
+            if (!isRunning && e.key.length === 1) startTest();
+            if (!isRunning && e.key !== 'Backspace') return;
+
+            const charSpans = textContainer.querySelectorAll('.char');
+            
+            if (e.key === 'Backspace') {
+                if (currentIndex > 0) {
+                    charSpans[currentIndex].classList.remove('current', 'correct', 'incorrect');
+                    currentIndex--;
+                    charSpans[currentIndex].classList.add('current');
+                    charSpans[currentIndex].classList.remove('correct', 'incorrect');
+                }
+                handleScrolling(charSpans[currentIndex]);
+                return;
+            }
+
+            if (e.key.length !== 1) return;
+
+            const expectedChar = currentPassage[currentIndex];
+            totalTyped++;
+
+            if (e.key === expectedChar) {
+                charSpans[currentIndex].classList.add('correct');
+                correctTyped++;
+            } else {
+                charSpans[currentIndex].classList.add('incorrect');
+                errors++;
+            }
+
+            charSpans[currentIndex].classList.remove('current');
+            currentIndex++;
+
+            if (currentIndex < charSpans.length) {
+                const nextChar = charSpans[currentIndex];
+                nextChar.classList.add('current');
+                handleScrolling(nextChar);
+            } else {
+                endTest();
+            }
+
+            updateStats();
+        });
+
+        function handleScrolling(element) {
+            const container = document.getElementById('text-container');
+            const elementTop = element.offsetTop;
+            const containerHeight = container.offsetHeight;
+            const targetScroll = elementTop - (containerHeight / 2) + (element.offsetHeight / 2);
+            container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+
+        function resetTest() {
+            clearInterval(interval);
+            initTest();
+            typingInput.focus();
+        }
+
+        focusOverlay.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            typingInput.focus();
+        });
+
+        document.addEventListener('click', () => {
+            if (resultsModal.classList.contains('hidden') && nameModal.classList.contains('hidden')) {
+                typingInput.focus();
+            }
+        });
+
+        window.onload = () => nameInput.focus();
+    </script>
 </body>
 </html>
